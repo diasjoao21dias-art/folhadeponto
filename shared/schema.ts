@@ -124,6 +124,7 @@ export interface DailyRecord {
   totalHours: string; // HH:mm
   balance: string; // HH:mm (positive or negative)
   isDayOff: boolean;
+  holidayDescription?: string;
 }
 
 export interface MonthlyMirrorResponse {

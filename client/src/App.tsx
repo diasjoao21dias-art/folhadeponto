@@ -15,6 +15,7 @@ import ImportPage from "@/pages/admin/import";
 import SettingsPage from "@/pages/admin/settings";
 import TimesheetPage from "@/pages/admin/timesheet";
 import AuditPage from "@/pages/admin/audit";
+import HolidaysPage from "@/pages/admin/holidays";
 
 function ProtectedRoute({ 
   component: Component, 
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/admin/settings"><ProtectedRoute component={SettingsPage} adminOnly /></Route>
       <Route path="/admin/timesheet"><ProtectedRoute component={TimesheetPage} adminOnly /></Route>
       <Route path="/admin/audit"><ProtectedRoute component={AuditPage} adminOnly /></Route>
+      <Route path="/admin/holidays"><ProtectedRoute component={HolidaysPage} adminOnly /></Route>
       <Route path="/">
         {() => {
           const { user, isLoading } = useAuth();

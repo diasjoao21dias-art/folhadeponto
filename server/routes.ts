@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import multer from "multer";
-import { format, parse, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, differenceInMinutes } from "date-fns";
+import { format, parse, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, differenceInMinutes, parseISO } from "date-fns";
 import { DailyRecord, type User } from "@shared/schema";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -122,21 +122,40 @@ export async function registerRoutes(
     const userId = Number(req.params.userId);
     const monthStr = req.query.month as string;
     if (!userId || !monthStr) return res.status(400).json({ message: "Missing userId or month" });
+    
     const user = await storage.getUser(userId);
     const company = await storage.getCompanySettings();
+    const holidays = await storage.getHolidays();
     if (!user) return res.status(404).json({ message: "User not found" });
+
     const startDate = startOfMonth(parse(monthStr, 'yyyy-MM', new Date()));
     const endDate = endOfMonth(startDate);
     endDate.setHours(23, 59, 59);
+    
     const punches = await storage.getPunchesByPeriod(userId, startDate, endDate);
     const dailyRecords: DailyRecord[] = [];
     const days = eachDayOfInterval({ start: startDate, end: endDate });
+    
     let totalMinutes = 0;
-    const expectedDailyMinutes = 8 * 60;
+    
+    // Parse work schedule (e.g., "08:00-12:00,13:00-17:00")
+    const schedule = user.workSchedule || "08:00-12:00,13:00-17:00";
+    const expectedDailyMinutes = schedule.split(',').reduce((total, part) => {
+      const [start, end] = part.split('-');
+      if (!start || !end) return total;
+      const [sH, sM] = start.split(':').map(Number);
+      const [eH, eM] = end.split(':').map(Number);
+      return total + ((eH * 60 + eM) - (sH * 60 + sM));
+    }, 0);
+
     days.forEach(day => {
       const dateKey = format(day, 'yyyy-MM-dd');
-      const dayPunches = punches.filter(p => format(p.timestamp!, 'yyyy-MM-dd') === dateKey).sort((a, b) => a.timestamp!.getTime() - b.timestamp!.getTime());
-      const isOff = isWeekend(day);
+      const dayPunches = punches.filter(p => format(p.timestamp!, 'yyyy-MM-dd') === dateKey)
+        .sort((a, b) => a.timestamp!.getTime() - b.timestamp!.getTime());
+      
+      const holiday = holidays.find(h => h.date === dateKey);
+      const isOff = isWeekend(day) || !!holiday;
+      
       let dailyTotalMinutes = 0;
       for (let i = 0; i < dayPunches.length; i += 2) {
         if (i + 1 < dayPunches.length) {
@@ -145,11 +164,32 @@ export async function registerRoutes(
           dailyTotalMinutes += differenceInMinutes(end, start);
         }
       }
-      const balanceMinutes = isOff ? 0 : dailyTotalMinutes - expectedDailyMinutes;
-      if (!isOff) totalMinutes += balanceMinutes;
-      dailyRecords.push({ date: dateKey, punches: dayPunches, totalHours: formatMinutes(dailyTotalMinutes), balance: formatMinutes(Math.abs(balanceMinutes), balanceMinutes < 0 ? '-' : '+'), isDayOff: isOff });
+      
+      const balanceMinutes = isOff ? dailyTotalMinutes : dailyTotalMinutes - expectedDailyMinutes;
+      if (!isOff || dailyTotalMinutes > 0) totalMinutes += balanceMinutes;
+      
+      dailyRecords.push({ 
+        date: dateKey, 
+        punches: dayPunches, 
+        totalHours: formatMinutes(dailyTotalMinutes), 
+        balance: formatMinutes(Math.abs(balanceMinutes), balanceMinutes < 0 ? '-' : '+'), 
+        isDayOff: isOff,
+        holidayDescription: holiday?.description
+      });
     });
-    res.json({ employee: user, company: company!, period: monthStr, records: dailyRecords, summary: { totalHours: formatMinutes(0), totalOvertime: totalMinutes > 0 ? formatMinutes(totalMinutes) : "00:00", totalNegative: totalMinutes < 0 ? formatMinutes(Math.abs(totalMinutes)) : "00:00", finalBalance: formatMinutes(Math.abs(totalMinutes), totalMinutes < 0 ? '-' : '+') } });
+
+    res.json({ 
+      employee: user, 
+      company: company!, 
+      period: monthStr, 
+      records: dailyRecords, 
+      summary: { 
+        totalHours: formatMinutes(totalMinutes > 0 ? totalMinutes : 0), 
+        totalOvertime: totalMinutes > 0 ? formatMinutes(totalMinutes) : "00:00", 
+        totalNegative: totalMinutes < 0 ? formatMinutes(Math.abs(totalMinutes)) : "00:00", 
+        finalBalance: formatMinutes(Math.abs(totalMinutes), totalMinutes < 0 ? '-' : '+') 
+      } 
+    });
   });
 
   app.put(api.timesheet.updatePunch.path, async (req, res) => {

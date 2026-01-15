@@ -8,7 +8,8 @@ import {
   LogOut, 
   Menu,
   LayoutDashboard,
-  ShieldCheck
+  ShieldCheck,
+  Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,6 +20,7 @@ const sidebarItems = [
   { icon: LayoutDashboard, label: "Visão Geral", href: "/admin" },
   { icon: Users, label: "Colaboradores", href: "/admin/employees" },
   { icon: FileText, label: "Espelho de Ponto", href: "/admin/timesheet" },
+  { icon: Calendar, label: "Feriados", href: "/admin/holidays" },
   { icon: Upload, label: "Importar AFD", href: "/admin/import" },
   { icon: ShieldCheck, label: "Auditoria", href: "/admin/audit" },
   { icon: Settings, label: "Configurações", href: "/admin/settings" },
