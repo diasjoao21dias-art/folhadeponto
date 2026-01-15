@@ -39,13 +39,25 @@ export const punches = pgTable("punches", {
   timestamp: timestamp("timestamp").notNull(),
   rawLine: text("raw_line"), // Original AFD line for traceability
   afdId: integer("afd_id").references(() => afdFiles.id),
-  source: text("source").default("AFD"), // 'AFD' | 'MANUAL'
+  source: text("source").default("AFD"), // 'AFD' | 'MANUAL' | 'EDITED'
+  justification: text("justification"),
+});
+
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  adminId: integer("admin_id").references(() => users.id),
+  targetUserId: integer("target_user_id").references(() => users.id),
+  action: text("action").notNull(), // 'CREATE_PUNCH', 'UPDATE_PUNCH', 'DELETE_PUNCH'
+  details: text("details").notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
 });
 
 // === RELATIONS ===
 
 export const usersRelations = relations(users, ({ many }) => ({
   punches: many(punches),
+  auditLogsAsAdmin: many(auditLogs, { relationName: "adminLogs" }),
+  auditLogsAsTarget: many(auditLogs, { relationName: "targetLogs" }),
 }));
 
 export const punchesRelations = relations(punches, ({ one }) => ({
@@ -63,11 +75,25 @@ export const afdFilesRelations = relations(afdFiles, ({ many }) => ({
   punches: many(punches),
 }));
 
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  admin: one(users, {
+    fields: [auditLogs.adminId],
+    references: [users.id],
+    relationName: "adminLogs",
+  }),
+  targetUser: one(users, {
+    fields: [auditLogs.targetUserId],
+    references: [users.id],
+    relationName: "targetLogs",
+  }),
+}));
+
 // === BASE SCHEMAS ===
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertCompanySchema = createInsertSchema(companySettings).omit({ id: true });
 export const insertPunchSchema = createInsertSchema(punches).omit({ id: true });
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, timestamp: true });
 
 // === EXPLICIT API CONTRACT TYPES ===
 
@@ -77,6 +103,7 @@ export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = z.infer<typeof insertCompanySchema>;
 export type AfdFile = typeof afdFiles.$inferSelect;
 export type Punch = typeof punches.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
 
 // Request types
 export type CreateUserRequest = InsertUser;
@@ -86,7 +113,7 @@ export type LoginRequest = { username: string; password: string };
 // Timesheet Types
 export interface DailyRecord {
   date: string; // YYYY-MM-DD
-  punches: string[]; // HH:mm array
+  punches: Punch[]; // Array of punch objects
   totalHours: string; // HH:mm
   balance: string; // HH:mm (positive or negative)
   isDayOff: boolean;

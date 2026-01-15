@@ -14,6 +14,7 @@ import EmployeesPage from "@/pages/admin/employees";
 import ImportPage from "@/pages/admin/import";
 import SettingsPage from "@/pages/admin/settings";
 import TimesheetPage from "@/pages/admin/timesheet";
+import AuditPage from "@/pages/admin/audit";
 
 function ProtectedRoute({ 
   component: Component, 
@@ -46,32 +47,14 @@ function ProtectedRoute({
 function Router() {
   return (
     <Switch>
-      {/* Public Routes */}
       <Route path="/auth" component={LoginPage} />
-      
-      {/* Employee Routes */}
-      <Route path="/dashboard">
-        <ProtectedRoute component={EmployeeDashboard} />
-      </Route>
-
-      {/* Admin Routes */}
-      <Route path="/admin">
-        <ProtectedRoute component={AdminDashboard} adminOnly />
-      </Route>
-      <Route path="/admin/employees">
-        <ProtectedRoute component={EmployeesPage} adminOnly />
-      </Route>
-      <Route path="/admin/import">
-        <ProtectedRoute component={ImportPage} adminOnly />
-      </Route>
-      <Route path="/admin/settings">
-        <ProtectedRoute component={SettingsPage} adminOnly />
-      </Route>
-      <Route path="/admin/timesheet">
-        <ProtectedRoute component={TimesheetPage} adminOnly />
-      </Route>
-
-      {/* Root Redirect */}
+      <Route path="/dashboard"><ProtectedRoute component={EmployeeDashboard} /></Route>
+      <Route path="/admin"><ProtectedRoute component={AdminDashboard} adminOnly /></Route>
+      <Route path="/admin/employees"><ProtectedRoute component={EmployeesPage} adminOnly /></Route>
+      <Route path="/admin/import"><ProtectedRoute component={ImportPage} adminOnly /></Route>
+      <Route path="/admin/settings"><ProtectedRoute component={SettingsPage} adminOnly /></Route>
+      <Route path="/admin/timesheet"><ProtectedRoute component={TimesheetPage} adminOnly /></Route>
+      <Route path="/admin/audit"><ProtectedRoute component={AuditPage} adminOnly /></Route>
       <Route path="/">
         {() => {
           const { user, isLoading } = useAuth();
@@ -80,8 +63,6 @@ function Router() {
           return <Redirect to={user.role === "admin" ? "/admin" : "/dashboard"} />;
         }}
       </Route>
-
-      {/* Fallback */}
       <Route component={NotFound} />
     </Switch>
   );

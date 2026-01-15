@@ -7,7 +7,8 @@ import {
   Upload, 
   LogOut, 
   Menu,
-  LayoutDashboard
+  LayoutDashboard,
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,6 +20,7 @@ const sidebarItems = [
   { icon: Users, label: "Colaboradores", href: "/admin/employees" },
   { icon: FileText, label: "Espelho de Ponto", href: "/admin/timesheet" },
   { icon: Upload, label: "Importar AFD", href: "/admin/import" },
+  { icon: ShieldCheck, label: "Auditoria", href: "/admin/audit" },
   { icon: Settings, label: "Configurações", href: "/admin/settings" },
 ];
 

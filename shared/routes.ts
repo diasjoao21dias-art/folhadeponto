@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertUserSchema, insertCompanySchema, users, companySettings, afdFiles } from './schema';
+import { insertUserSchema, insertCompanySchema, users, companySettings, afdFiles, auditLogs, punches } from './schema';
 
 // ============================================
 // SHARED ERROR SCHEMAS
@@ -116,7 +116,6 @@ export const api = {
     upload: {
       method: 'POST' as const,
       path: '/api/afd/upload',
-      // Input is FormData, handled by middleware, but we document response
       responses: {
         200: z.object({
           message: z.string(),
@@ -129,19 +128,61 @@ export const api = {
   timesheet: {
     getMirror: {
       method: 'GET' as const,
-      path: '/api/timesheet/:userId', // Query params: ?month=YYYY-MM
+      path: '/api/timesheet/:userId',
       responses: {
-        // Complex response type defined in schema.ts, handled as custom here
-        200: z.any(), // Using any here because it matches the MonthlyMirrorResponse interface structure
+        200: z.any(),
         404: errorSchemas.notFound,
+      },
+    },
+    updatePunch: {
+      method: 'PUT' as const,
+      path: '/api/timesheet/punches/:id',
+      input: z.object({
+        timestamp: z.string(),
+        justification: z.string(),
+      }),
+      responses: {
+        200: z.any(),
+        403: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
+    deletePunch: {
+      method: 'DELETE' as const,
+      path: '/api/timesheet/punches/:id',
+      input: z.object({
+        justification: z.string(),
+      }),
+      responses: {
+        204: z.void(),
+        403: errorSchemas.unauthorized,
+      },
+    },
+    createPunch: {
+      method: 'POST' as const,
+      path: '/api/timesheet/punches',
+      input: z.object({
+        userId: z.number(),
+        timestamp: z.string(),
+        justification: z.string(),
+      }),
+      responses: {
+        201: z.any(),
+        403: errorSchemas.unauthorized,
+      },
+    },
+  },
+  audit: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/audit',
+      responses: {
+        200: z.array(z.any()),
       },
     },
   },
 };
 
-// ============================================
-// REQUIRED: buildUrl helper
-// ============================================
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
   let url = path;
   if (params) {
