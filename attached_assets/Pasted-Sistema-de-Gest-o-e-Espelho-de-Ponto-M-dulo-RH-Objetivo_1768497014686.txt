@@ -1,0 +1,36 @@
+Sistema de Gestão e Espelho de Ponto (Módulo RH)
+Objetivo:
+"Desenvolver um sistema de Gestão de Folha de Ponto (RH) que sirva como módulo administrativo para processar arquivos AFD. O sistema deve ser construído com React, Node.js (Express) e SQLite."
+
+Requisitos de Autenticação e Admin (Idêntico ao Sistema de Ponto):
+
+Sistema de Login Manual: Implementar autenticação via Passport.js (Local Strategy) com sessões.
+Usuário Admin Inicial: Criar automaticamente um usuário admin com senha admin no primeiro acesso.
+Painel de Controle: Ter uma barra lateral (Sidebar) e área administrativa exclusiva para o Admin, com layout seguindo o padrão Shadcn/UI (idêntico ao sistema de ponto atual).
+Gestão de Usuários: Tela para o Admin cadastrar, editar e excluir funcionários manualmente (Nome, CPF/PIS, Usuário, Senha e Cargo).
+Funcionalidades de Gestão de Ponto:
+
+Importador AFD:
+Upload de arquivos .txt no padrão AFD (Portaria 671/1510).
+Processamento das linhas de Registro Tipo 3 (batidas) e vinculação automática aos funcionários pelo PIS/CPF.
+Espelho de Ponto Mensal:
+Tela para selecionar funcionário e mês/ano.
+Tabela detalhada com: Data, Entrada 1, Saída 1, Entrada 2, Saída 2, Total de Horas no dia.
+Cálculo automático de Horas Extras e Banco de Horas.
+Relatórios:
+Geração de PDF do "Espelho de Ponto" formatado para assinatura, contendo cabeçalho da empresa (Razão Social, CNPJ).
+Exportação de resumos mensais para Excel/XLSX.
+Configurações de Empresa:
+
+Tela para o Admin configurar os dados da empresa (Razão Social, CNPJ, Endereço) que aparecerão nos relatórios.
+Especificações Técnicas:
+
+Banco de Dados: SQLite via Drizzle ORM.
+Frontend: React com Tailwind CSS e componentes Shadcn.
+Estado: TanStack Query para sincronização de dados.
+Design: Manter a mesma identidade visual (Cores, Sidebar e Estilo) do sistema de ponto atual para que pareçam o mesmo produto."
+Com esse prompt, o agente terá todas as informações necessárias sobre:
+
+Segurança: Como você quer que o login funcione (igual ao atual).
+Funcionalidade: O que o sistema deve fazer (importar AFD e gerar espelho).
+Tecnologia: Quais ferramentas usar para manter a compatibilidade total.
