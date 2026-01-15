@@ -159,9 +159,9 @@ export default function TimesheetPage() {
                 <Card className="dashboard-card">
                   <CardContent className="pt-6 text-sm space-y-2">
                     <p className="font-bold text-base mb-2">Empresa</p>
-                    <p><span className="text-muted-foreground">Razão Social:</span> {mirror.company.razaoSocial}</p>
-                    <p><span className="text-muted-foreground">CNPJ:</span> {mirror.company.cnpj}</p>
-                    <p><span className="text-muted-foreground">Endereço:</span> {mirror.company.endereco}</p>
+                    <p><span className="text-muted-foreground">Razão Social:</span> {mirror.company?.razaoSocial || "-"}</p>
+                    <p><span className="text-muted-foreground">CNPJ:</span> {mirror.company?.cnpj || "-"}</p>
+                    <p><span className="text-muted-foreground">Endereço:</span> {mirror.company?.endereco || "-"}</p>
                   </CardContent>
                 </Card>
                 <Card className="dashboard-card">
