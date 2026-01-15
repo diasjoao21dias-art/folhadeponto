@@ -39,7 +39,11 @@ export default function TimesheetPage() {
 
   const handleEdit = (punch: any) => {
     setEditingPunch(punch);
-    setEditTimestamp(format(new Date(punch.timestamp), "yyyy-MM-dd'T'HH:mm"));
+    // Ajuste para lidar com fuso horário local ao editar
+    const date = new Date(punch.timestamp);
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+    setEditTimestamp(localISOTime);
     setJustification("");
     setIsAdding(false);
     setIsEditDialogOpen(true);
@@ -54,17 +58,24 @@ export default function TimesheetPage() {
   };
 
   const handleSave = async () => {
-    if (!justification) return toast({ title: "Justificativa obrigatória", variant: "destructive" });
+    if (!justification || justification.trim().length < 5) {
+      return toast({ 
+        title: "Justificativa obrigatória", 
+        description: "Por favor, informe uma justificativa com pelo menos 5 caracteres.",
+        variant: "destructive" 
+      });
+    }
     try {
+      const timestamp = new Date(editTimestamp).toISOString();
       if (isAdding) {
         await apiRequest("POST", "/api/timesheet/punches", {
           userId: parseInt(selectedUser),
-          timestamp: new Date(editTimestamp).toISOString(),
+          timestamp,
           justification
         });
       } else {
         await apiRequest("PUT", `/api/timesheet/punches/${editingPunch.id}`, {
-          timestamp: new Date(editTimestamp).toISOString(),
+          timestamp,
           justification
         });
       }
