@@ -1,42 +1,42 @@
 import { sql, relations } from "drizzle-orm";
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, serial, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // === TABLE DEFINITIONS ===
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("employee"), // 'admin' | 'employee'
   name: text("name").notNull(),
   cpf: text("cpf"),
   pis: text("pis"), // Essential for AFD linking
-  active: integer("active", { mode: "boolean" }).default(true),
+  active: boolean("active").default(true),
   cargo: text("cargo"),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const companySettings = sqliteTable("company_settings", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const companySettings = pgTable("company_settings", {
+  id: serial("id").primaryKey(),
   razaoSocial: text("razao_social").notNull(),
   cnpj: text("cnpj").notNull(),
   endereco: text("endereco").notNull(),
 });
 
-export const afdFiles = sqliteTable("afd_files", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const afdFiles = pgTable("afd_files", {
+  id: serial("id").primaryKey(),
   filename: text("filename").notNull(),
-  uploadedAt: integer("uploaded_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
-  processed: integer("processed", { mode: "boolean" }).default(false),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  processed: boolean("processed").default(false),
   recordCount: integer("record_count").default(0),
 });
 
-export const punches = sqliteTable("punches", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const punches = pgTable("punches", {
+  id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
-  timestamp: integer("timestamp", { mode: "timestamp" }).notNull(),
+  timestamp: timestamp("timestamp").notNull(),
   rawLine: text("raw_line"), // Original AFD line for traceability
   afdId: integer("afd_id").references(() => afdFiles.id),
   source: text("source").default("AFD"), // 'AFD' | 'MANUAL'
