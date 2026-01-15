@@ -6,7 +6,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import multer from "multer";
 import { format, parse, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, differenceInMinutes } from "date-fns";
-import { DailyRecord, MonthlyMirrorResponse } from "@shared/schema";
+import { DailyRecord, type Punch } from "@shared/schema";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
