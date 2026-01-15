@@ -24,9 +24,24 @@ export interface IStorage {
   deletePunch(id: number): Promise<void>;
   createAuditLog(log: any): Promise<AuditLog>;
   getAuditLogs(): Promise<any[]>;
+  // Novos métodos
+  getHolidays(): Promise<any[]>;
+  createHoliday(holiday: any): Promise<any>;
+  deleteHoliday(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
+  async getHolidays(): Promise<any[]> {
+    return await db.select().from(sql`holidays` as any).orderBy(sql`date` as any);
+  }
+  async createHoliday(holiday: any): Promise<any> {
+    const [result] = await db.insert(sql`holidays` as any).values(holiday).returning();
+    return result;
+  }
+  async deleteHoliday(id: number): Promise<void> {
+    await db.delete(sql`holidays` as any).where(eq(sql`id` as any, id));
+  }
+
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;

@@ -192,6 +192,26 @@ export async function registerRoutes(
     res.json(logs);
   });
 
+  app.get("/api/holidays", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const holidays = await storage.getHolidays();
+    res.json(holidays);
+  });
+
+  app.post("/api/holidays", async (req, res) => {
+    const user = req.user as User;
+    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
+    const holiday = await storage.createHoliday(req.body);
+    res.status(201).json(holiday);
+  });
+
+  app.delete("/api/holidays/:id", async (req, res) => {
+    const user = req.user as User;
+    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
+    await storage.deleteHoliday(Number(req.params.id));
+    res.status(204).send();
+  });
+
   await seedAdminUser();
   return httpServer;
 }

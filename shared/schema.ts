@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   pis: text("pis"), // Essential for AFD linking
   active: boolean("active").default(true),
   cargo: text("cargo"),
+  workSchedule: text("work_schedule").default("08:00-12:00,13:00-17:00"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -23,6 +24,12 @@ export const companySettings = pgTable("company_settings", {
   razaoSocial: text("razao_social").notNull(),
   cnpj: text("cnpj").notNull(),
   endereco: text("endereco").notNull(),
+});
+
+export const holidays = pgTable("holidays", {
+  id: serial("id").primaryKey(),
+  date: text("date").notNull(), // YYYY-MM-DD
+  description: text("description").notNull(),
 });
 
 export const afdFiles = pgTable("afd_files", {

@@ -289,6 +289,10 @@ function UserDialog({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2 col-span-2">
+              <Label>Jornada de Trabalho (Entrada-Saída, Entrada-Saída)</Label>
+              <Input {...form.register("workSchedule")} placeholder="Ex: 08:00-12:00,13:00-17:00" />
+            </div>
           </div>
           <div className="flex justify-end pt-4">
             <Button type="submit" disabled={isPending}>
