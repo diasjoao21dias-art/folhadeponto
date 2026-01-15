@@ -6,7 +6,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import multer from "multer";
 import { format, parse, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, differenceInMinutes } from "date-fns";
-import { DailyRecord, type Punch } from "@shared/schema";
+import { DailyRecord, type User } from "@shared/schema";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -153,37 +153,41 @@ export async function registerRoutes(
   });
 
   app.put(api.timesheet.updatePunch.path, async (req, res) => {
-    if (!req.isAuthenticated() || req.user?.role !== 'admin') return res.status(403).send();
+    const user = req.user as User;
+    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
     const punchId = Number(req.params.id);
     const { timestamp, justification } = req.body;
     const oldPunch = await storage.getPunch(punchId);
     if (!oldPunch) return res.status(404).send();
     const updated = await storage.updatePunch(punchId, { timestamp: new Date(timestamp), justification, source: 'EDITED' });
-    await storage.createAuditLog({ adminId: req.user.id, targetUserId: oldPunch.userId, action: 'UPDATE_PUNCH', details: `Alterado de ${format(oldPunch.timestamp!, "dd/MM HH:mm")} para ${format(new Date(timestamp), "dd/MM HH:mm")}. Justificativa: ${justification}` });
+    await storage.createAuditLog({ adminId: user.id, targetUserId: oldPunch.userId, action: 'UPDATE_PUNCH', details: `Alterado de ${format(oldPunch.timestamp!, "dd/MM HH:mm")} para ${format(new Date(timestamp), "dd/MM HH:mm")}. Justificativa: ${justification}` });
     res.json(updated);
   });
 
   app.delete(api.timesheet.deletePunch.path, async (req, res) => {
-    if (!req.isAuthenticated() || req.user?.role !== 'admin') return res.status(403).send();
+    const user = req.user as User;
+    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
     const punchId = Number(req.params.id);
     const { justification } = req.body;
     const oldPunch = await storage.getPunch(punchId);
     if (!oldPunch) return res.status(404).send();
     await storage.deletePunch(punchId);
-    await storage.createAuditLog({ adminId: req.user.id, targetUserId: oldPunch.userId, action: 'DELETE_PUNCH', details: `Removido ponto de ${format(oldPunch.timestamp!, "dd/MM HH:mm")}. Justificativa: ${justification}` });
+    await storage.createAuditLog({ adminId: user.id, targetUserId: oldPunch.userId, action: 'DELETE_PUNCH', details: `Removido ponto de ${format(oldPunch.timestamp!, "dd/MM HH:mm")}. Justificativa: ${justification}` });
     res.status(204).send();
   });
 
   app.post(api.timesheet.createPunch.path, async (req, res) => {
-    if (!req.isAuthenticated() || req.user?.role !== 'admin') return res.status(403).send();
+    const user = req.user as User;
+    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
     const { userId, timestamp, justification } = req.body;
     await storage.createPunches([{ userId, timestamp: new Date(timestamp), justification, source: 'MANUAL' }]);
-    await storage.createAuditLog({ adminId: req.user.id, targetUserId: userId, action: 'CREATE_PUNCH', details: `Adicionado ponto manual em ${format(new Date(timestamp), "dd/MM HH:mm")}. Justificativa: ${justification}` });
+    await storage.createAuditLog({ adminId: user.id, targetUserId: userId, action: 'CREATE_PUNCH', details: `Adicionado ponto manual em ${format(new Date(timestamp), "dd/MM HH:mm")}. Justificativa: ${justification}` });
     res.status(201).json({ message: "Ponto criado" });
   });
 
   app.get(api.audit.list.path, async (req, res) => {
-    if (!req.isAuthenticated() || req.user?.role !== 'admin') return res.status(403).send();
+    const user = req.user as User;
+    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
     const logs = await storage.getAuditLogs();
     res.json(logs);
   });
