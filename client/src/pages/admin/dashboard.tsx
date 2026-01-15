@@ -2,7 +2,8 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { useUsers } from "@/hooks/use-users";
 import { useAfdFiles } from "@/hooks/use-afd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileCheck, Clock, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, FileCheck, Clock, AlertCircle, Upload, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
