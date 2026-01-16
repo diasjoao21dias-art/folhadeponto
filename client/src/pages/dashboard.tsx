@@ -1,19 +1,25 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { LogOut, Clock, CalendarDays, MousePointer2, Loader2 } from "lucide-react";
+import { LogOut, Clock, CalendarDays, MousePointer2, Loader2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Punch, MonthlyMirrorResponse } from "@shared/schema";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 
 export default function EmployeeDashboard() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const currentMonth = format(new Date(), "yyyy-MM");
+  const [isAdjOpen, setIsAdjOpen] = useState(false);
 
   const { data: mirror, isLoading: isLoadingMirror } = useQuery<MonthlyMirrorResponse>({
     queryKey: [api.timesheet.getMirror.path, user?.id, currentMonth],
@@ -48,6 +54,26 @@ export default function EmployeeDashboard() {
       });
     },
   });
+
+  const adjMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", api.timesheet.createAdjustment.path, data);
+    },
+    onSuccess: () => {
+      setIsAdjOpen(false);
+      toast({ title: "Solicitação enviada com sucesso" });
+    }
+  });
+
+  const handleAdjSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    adjMutation.mutate({
+      type: formData.get("type"),
+      timestamp: formData.get("timestamp") ? new Date(formData.get("timestamp") as string).toISOString() : null,
+      justification: formData.get("justification"),
+    });
+  };
 
   const recentPunches = mirror?.records
     .flatMap(r => r.punches)
@@ -114,13 +140,56 @@ export default function EmployeeDashboard() {
               </p>
               
               <div className="pt-4 border-t border-white/20">
-                <Button 
-                  variant="outline" 
-                  className="w-full bg-white/10 border-white/30 text-white hover:bg-white/20"
-                  onClick={() => window.location.href = '#justification'}
-                >
-                  Solicitar Ajuste ou Atestado
-                </Button>
+                <Dialog open={isAdjOpen} onOpenChange={setIsAdjOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-full bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    >
+                      <AlertCircle className="mr-2 h-4 w-4" />
+                      Solicitar Ajuste ou Atestado
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Solicitar Ajuste de Ponto</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAdjSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Tipo de Solicitação</Label>
+                        <Select name="type" required defaultValue="MISSING_PUNCH">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MISSING_PUNCH">Esquecimento de Ponto</SelectItem>
+                            <SelectItem value="MEDICAL_CERTIFICATE">Atestado Médico</SelectItem>
+                            <SelectItem value="ADJUSTMENT">Ajuste de Horário</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Data e Hora (opcional para atestados)</Label>
+                        <input 
+                          type="datetime-local" 
+                          name="timestamp"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Justificativa</Label>
+                        <Textarea name="justification" required placeholder="Descreva o motivo da solicitação..." />
+                      </div>
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button type="button" variant="outline" onClick={() => setIsAdjOpen(false)}>Cancelar</Button>
+                        <Button type="submit" disabled={adjMutation.isPending}>
+                          {adjMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Enviar Solicitação
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>

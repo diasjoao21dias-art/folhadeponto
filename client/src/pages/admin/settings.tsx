@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertCompanySchema, InsertCompanySettings } from "@shared/schema";
 import { Loader2, Save } from "lucide-react";
 import { useEffect } from "react";
-import { z } from "zod";
 
 export default function SettingsPage() {
   const { data: settings, isLoading } = useCompanySettings();
@@ -114,13 +114,13 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Tolerância Diária (Minutos)</Label>
+                      <Label>Validade do Banco (Meses)</Label>
                       <Input 
                         type="number"
-                        {...form.register("tolerance", { valueAsNumber: true })}
-                        placeholder="Ex: 10"
+                        {...form.register("bankExpirationMonths", { valueAsNumber: true })}
+                        placeholder="Ex: 6"
                       />
-                      <p className="text-xs text-muted-foreground">Minutos permitidos de variação por dia conforme CLT.</p>
+                      <p className="text-xs text-muted-foreground">Período para compensação das horas antes do pagamento.</p>
                     </div>
                   </div>
 
