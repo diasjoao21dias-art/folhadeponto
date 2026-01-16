@@ -343,7 +343,7 @@ export default function TimesheetPage() {
                 </div>
                 <div className="flex flex-col items-center gap-2">
                   <div className="border-t border-foreground w-64"></div>
-                  <p className="text-xs font-medium uppercase">{mirror.company.razaoSocial}</p>
+                  <p className="text-xs font-medium uppercase">{mirror.company?.razaoSocial || "Empresa não configurada"}</p>
                   <p className="text-[10px] text-muted-foreground">Representante da Empresa</p>
                 </div>
               </div>
