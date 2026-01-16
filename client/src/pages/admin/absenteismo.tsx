@@ -3,12 +3,15 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, User, Calendar, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
 
 export default function AbsenteismoPage() {
   const currentMonth = format(new Date(), "yyyy-MM");
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   
   const { data: report, isLoading } = useQuery<any[]>({
     queryKey: ["/api/reports/absenteismo", currentMonth],
@@ -97,7 +100,55 @@ export default function AbsenteismoPage() {
                     <TableCell className="text-center">{item.certificates}</TableCell>
                     <TableCell className="text-center">0</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="ghost">Ver Detalhes</Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => setSelectedEmployee(item)}>Ver Detalhes</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Detalhes de Absenteísmo</DialogTitle>
+                          </DialogHeader>
+                          {selectedEmployee && (
+                            <div className="space-y-4 pt-4">
+                              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                  <User className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <p className="font-bold">{selectedEmployee.name}</p>
+                                  <p className="text-xs text-muted-foreground">Resumo de Ausências</p>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="p-3 border rounded-lg">
+                                  <div className="flex items-center gap-2 text-red-600 mb-1">
+                                    <Calendar className="w-4 h-4" />
+                                    <span className="text-xs font-bold uppercase">Faltas</span>
+                                  </div>
+                                  <p className="text-2xl font-bold">{selectedEmployee.absences}</p>
+                                </div>
+                                <div className="p-3 border rounded-lg">
+                                  <div className="flex items-center gap-2 text-blue-600 mb-1">
+                                    <Clock className="w-4 h-4" />
+                                    <span className="text-xs font-bold uppercase">Atestados</span>
+                                  </div>
+                                  <p className="text-2xl font-bold">{selectedEmployee.certificates}</p>
+                                </div>
+                              </div>
+
+                              <div className="p-3 border rounded-lg bg-yellow-50/50 border-yellow-100">
+                                <p className="text-xs font-bold text-yellow-700 uppercase mb-2">Observações do Mês</p>
+                                <p className="text-sm text-muted-foreground italic">
+                                  {selectedEmployee.absences > 0 
+                                    ? "Colaborador possui faltas injustificadas. Recomenda-se feedback." 
+                                    : "Sem ocorrências críticas de absenteísmo neste período."}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
                     </TableCell>
                   </TableRow>
                 ))}
