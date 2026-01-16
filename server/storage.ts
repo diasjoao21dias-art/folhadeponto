@@ -145,39 +145,58 @@ export class DatabaseStorage implements IStorage {
     return entry;
   }
   async getAuditLogs(): Promise<any[]> {
-    const logs = await db.select().from(auditLogs).orderBy(desc(auditLogs.timestamp));
-    const result = [];
-    for (const log of logs) {
-      const admin = log.adminId ? await this.getUser(log.adminId) : null;
-      const target = log.targetUserId ? await this.getUser(log.targetUserId) : null;
-      result.push({ ...log, adminName: admin?.name || "Sistema", targetName: target?.name || "-" });
-    }
-    return result;
-  }
-  async getHolidays(): Promise<any[]> {
-    return await db.select().from(holidays).orderBy(holidays.date);
-  }
-  async createHoliday(holiday: any): Promise<any> {
-    const [result] = await db.insert(holidays).values(holiday).returning();
-    return result;
-  }
-  async deleteHoliday(id: number): Promise<void> {
-    await db.delete(holidays).where(eq(holidays.id, id));
-  }
-  async createAdjustment(adj: any): Promise<any> {
-    const [result] = await db.insert(punchAdjustments).values(adj).returning();
-    return result;
+    const logs = await db
+      .select({
+        id: auditLogs.id,
+        adminId: auditLogs.adminId,
+        targetUserId: auditLogs.targetUserId,
+        action: auditLogs.action,
+        details: auditLogs.details,
+        ipAddress: auditLogs.ipAddress,
+        userAgent: auditLogs.userAgent,
+        timestamp: auditLogs.timestamp,
+        adminName: users.name,
+        targetName: sql<string>`target_users.name`,
+      })
+      .from(auditLogs)
+      .leftJoin(users, eq(auditLogs.adminId, users.id))
+      .leftJoin(sql`${users} as target_users`, eq(auditLogs.targetUserId, sql`target_users.id`))
+      .orderBy(desc(auditLogs.timestamp));
+
+    return logs.map(log => ({
+      ...log,
+      adminName: log.adminName || "Sistema",
+      targetName: log.targetName || "-"
+    }));
   }
   async getAdjustments(filters: any = {}): Promise<any[]> {
-    let query = db.select().from(punchAdjustments);
-    if (filters.status) query = query.where(eq(punchAdjustments.status, filters.status)) as any;
-    const logs = await query.orderBy(desc(punchAdjustments.createdAt));
-    const result = [];
-    for (const log of logs) {
-      const user = await this.getUser(log.userId);
-      result.push({ ...log, userName: user?.name || "-" });
+    let query = db
+      .select({
+        id: punchAdjustments.id,
+        userId: punchAdjustments.userId,
+        type: punchAdjustments.type,
+        timestamp: punchAdjustments.timestamp,
+        endDate: punchAdjustments.endDate,
+        justification: punchAdjustments.justification,
+        attachmentUrl: punchAdjustments.attachmentUrl,
+        status: punchAdjustments.status,
+        adminId: punchAdjustments.adminId,
+        adminFeedback: punchAdjustments.adminFeedback,
+        createdAt: punchAdjustments.createdAt,
+        userName: users.name,
+      })
+      .from(punchAdjustments)
+      .leftJoin(users, eq(punchAdjustments.userId, users.id));
+
+    if (filters.status) {
+      query = query.where(eq(punchAdjustments.status, filters.status)) as any;
     }
-    return result;
+
+    const results = await query.orderBy(desc(punchAdjustments.createdAt));
+    return results.map(row => ({
+      ...row,
+      userName: row.userName || "-"
+    }));
   }
   async getAdjustment(id: number): Promise<any | undefined> {
     const [adj] = await db.select().from(punchAdjustments).where(eq(punchAdjustments.id, id));
