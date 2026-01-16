@@ -171,6 +171,14 @@ export const api = {
         403: errorSchemas.unauthorized,
       },
     },
+    clockIn: {
+      method: 'POST' as const,
+      path: '/api/timesheet/clock-in',
+      responses: {
+        201: z.any(),
+        401: errorSchemas.unauthorized,
+      },
+    },
   },
   audit: {
     list: {

@@ -225,6 +225,19 @@ export async function registerRoutes(
     res.status(201).json({ message: "Ponto criado" });
   });
 
+  app.post(api.timesheet.clockIn.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const user = req.user as User;
+    const now = new Date();
+    await storage.createPunches([{ 
+      userId: user.id, 
+      timestamp: now, 
+      source: 'MANUAL',
+      justification: 'Marcação via sistema (Web)' 
+    }]);
+    res.status(201).json({ message: "Ponto registrado com sucesso", timestamp: now });
+  });
+
   app.get(api.audit.list.path, async (req, res) => {
     const user = req.user as User;
     if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
