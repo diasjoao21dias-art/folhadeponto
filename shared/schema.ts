@@ -63,8 +63,9 @@ export const afdFiles = pgTable("afd_files", {
 export const punchAdjustments = pgTable("punch_adjustments", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  type: text("type").notNull(), // 'MISSING_PUNCH', 'MEDICAL_CERTIFICATE', 'ADJUSTMENT'
+  type: text("type").notNull(), // 'MISSING_PUNCH', 'MEDICAL_CERTIFICATE', 'ADJUSTMENT', 'ABSENCE_ABONADO'
   timestamp: timestamp("timestamp"),
+  endDate: timestamp("end_date"), // For multi-day medical certificates
   justification: text("justification").notNull(),
   attachmentUrl: text("attachment_url"),
   status: text("status").default("pending"), // 'pending', 'approved', 'rejected'
@@ -173,6 +174,7 @@ export interface DailyRecord {
   balance: string; // HH:mm (positive or negative)
   isDayOff: boolean;
   holidayDescription?: string;
+  isAbonado?: boolean;
 }
 
 export interface MonthlyMirrorResponse {

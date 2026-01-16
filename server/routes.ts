@@ -138,12 +138,6 @@ export async function registerRoutes(
     endDate.setHours(23, 59, 59);
     
     const punches = await storage.getPunchesByPeriod(userId, startDate, endDate);
-    const dailyRecords: DailyRecord[] = [];
-    const days = eachDayOfInterval({ start: startDate, end: endDate });
-    
-    let totalMinutes = 0;
-    let totalNightMinutes = 0;
-    
     // Configs from company
     const tolerance = company?.tolerance ?? 10;
     const nightStartStr = company?.nightShiftStart ?? "22:00";
@@ -160,6 +154,19 @@ export async function registerRoutes(
       return total + ((eH * 60 + eM) - (sH * 60 + sM));
     }, 0);
 
+    const dailyRecords: DailyRecord[] = [];
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    
+    let totalMinutes = 0;
+    let totalNightMinutes = 0;
+    let totalNightMinutesForBonus = 0;
+    
+    const workDaysInMonth = days.filter(d => !isWeekend(d) && !holidays.find(h => h.date === format(d, 'yyyy-MM-dd'))).length;
+    const dsrDaysInMonth = days.length - workDaysInMonth;
+
+    const adjustments = await storage.getAdjustments({ userId });
+    const approvedAdjustments = adjustments.filter(a => a.status === 'approved');
+
     days.forEach(day => {
       const dateKey = format(day, 'yyyy-MM-dd');
       const dayPunches = punches.filter(p => format(p.timestamp!, 'yyyy-MM-dd') === dateKey)
@@ -168,11 +175,23 @@ export async function registerRoutes(
       const holiday = holidays.find(h => h.date === dateKey);
       const isOff = isWeekend(day) || !!holiday;
       
+      const abono = approvedAdjustments.find(a => {
+        if (a.type === 'MEDICAL_CERTIFICATE' || a.type === 'ABSENCE_ABONADO') {
+           if (a.endDate) {
+             const start = a.timestamp!;
+             const end = a.endDate!;
+             return day >= start && day <= end;
+           }
+           return format(a.timestamp!, 'yyyy-MM-dd') === dateKey;
+        }
+        return false;
+      });
+
       let dailyTotalMinutes = 0;
-      let dailyNightMinutesForBank = 0; // Decimals handled via floats internally
+      let dailyNightMinutesForBank = 0;
       let dailyNightMinutesForBonus = 0;
 
-      const cargo = (user as any).cargo; // Assuming joined in storage
+      const cargo = (user as any).cargo;
       const nsStart = cargo?.nightStart || nightStartStr;
       const nsEnd = cargo?.nightEnd || nightEndStr;
       const applyExtension = cargo?.applyNightExtension ?? true;
@@ -185,13 +204,9 @@ export async function registerRoutes(
           dailyTotalMinutes += diff;
 
           const nightOverlap = calculateNightOverlap(start, end, nsStart, nsEnd);
-          
           if (nightOverlap > 0) {
-            // Factor 1.142857 for precision
             dailyNightMinutesForBank += nightOverlap * 1.142857;
             dailyNightMinutesForBonus += nightOverlap;
-
-            // Prorrogação (Extension)
             if (applyExtension && end.getHours() >= parseInt(nsEnd.split(':')[0])) {
                const extensionMinutes = differenceInMinutes(end, parseISO(`${format(end, 'yyyy-MM-dd')}T${nsEnd}:00`));
                if (extensionMinutes > 0) {
@@ -203,17 +218,21 @@ export async function registerRoutes(
         }
       }
       
-      // Apply tolerance logic
       let adjustedDailyMinutes = dailyTotalMinutes;
-      const diffFromExpected = Math.abs(dailyTotalMinutes - expectedDailyMinutes);
-      if (!isOff && diffFromExpected <= tolerance) {
+      if (abono) {
         adjustedDailyMinutes = expectedDailyMinutes;
+      } else {
+        const diffFromExpected = Math.abs(dailyTotalMinutes - expectedDailyMinutes);
+        if (!isOff && diffFromExpected <= tolerance) {
+          adjustedDailyMinutes = expectedDailyMinutes;
+        }
       }
 
       const balanceMinutes = isOff ? adjustedDailyMinutes : adjustedDailyMinutes - expectedDailyMinutes;
       if (!isOff || adjustedDailyMinutes > 0) totalMinutes += balanceMinutes;
       
       totalNightMinutes += Math.round(dailyNightMinutesForBank);
+      totalNightMinutesForBonus += dailyNightMinutesForBonus;
       
       dailyRecords.push({ 
         date: dateKey, 
@@ -221,9 +240,13 @@ export async function registerRoutes(
         totalHours: formatMinutes(dailyTotalMinutes), 
         balance: formatMinutes(Math.abs(balanceMinutes), balanceMinutes < 0 ? '-' : '+'), 
         isDayOff: isOff,
-        holidayDescription: holiday?.description
+        holidayDescription: holiday?.description,
+        isAbonado: !!abono
       });
     });
+
+    const overtimeMinutes = totalMinutes > 0 ? totalMinutes : 0;
+    const dsrReflexMinutes = workDaysInMonth > 0 ? Math.round((overtimeMinutes + totalNightMinutesForBonus) / workDaysInMonth * dsrDaysInMonth) : 0;
 
     res.json({ 
       employee: user, 
@@ -232,11 +255,12 @@ export async function registerRoutes(
       records: dailyRecords, 
       summary: { 
         totalHours: formatMinutes(totalMinutes > 0 ? totalMinutes : 0), 
-        totalOvertime: totalMinutes > 0 ? formatMinutes(totalMinutes) : "00:00", 
+        totalOvertime: formatMinutes(overtimeMinutes), 
         totalNegative: totalMinutes < 0 ? formatMinutes(Math.abs(totalMinutes)) : "00:00", 
         finalBalance: formatMinutes(Math.abs(totalMinutes), totalMinutes < 0 ? '-' : '+'),
         nightHours: formatMinutes(totalNightMinutes),
-        dsrValue: "Cálculo automático ativado"
+        dsrValue: formatMinutes(dsrReflexMinutes),
+        dsrExplanation: `Reflexo de HE + Adic. Noturno (${workDaysInMonth} dias úteis, ${dsrDaysInMonth} DSRs)`
       } 
     });
   });

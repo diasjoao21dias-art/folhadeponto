@@ -257,11 +257,12 @@ export default function TimesheetPage() {
                   <TableHeader className="bg-muted/50">
                     <TableRow>
                       <TableHead>Data</TableHead>
-                      <TableHead className="text-center">Entrada 1</TableHead>
-                      <TableHead className="text-center">Saída 1</TableHead>
-                      <TableHead className="text-center">Entrada 2</TableHead>
-                      <TableHead className="text-center">Saída 2</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-center">Ent 1</TableHead>
+                      <TableHead className="text-center">Sai 1</TableHead>
+                      <TableHead className="text-center">Ent 2</TableHead>
+                      <TableHead className="text-center">Sai 2</TableHead>
+                      <TableHead className="text-right">Horas Normais</TableHead>
+                      <TableHead className="text-right">Adic. Noturno</TableHead>
                       <TableHead className="text-right">Saldo</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -285,13 +286,67 @@ export default function TimesheetPage() {
                             ) : "-"}
                           </TableCell>
                         ))}
-                        <TableCell className="text-right font-mono">{record.totalHours}</TableCell>
+                        <TableCell className="text-right font-mono">{record.isAbonado ? "ABONADO" : record.totalHours}</TableCell>
+                        <TableCell className="text-right font-mono">{(record as any).nightHours || "00:00"}</TableCell>
                         <TableCell className={`text-right font-mono ${record.balance.startsWith("-") ? "text-red-500" : "text-green-600"}`}>{record.balance}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </Card>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase font-semibold">Total de Horas</p>
+                  <p className="text-2xl font-bold">{mirror.summary.totalHours}</p>
+                </Card>
+                <Card className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase font-semibold">Horas Extras</p>
+                  <p className="text-2xl font-bold text-green-600">{mirror.summary.totalOvertime}</p>
+                </Card>
+                <Card className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase font-semibold">Reflexo DSR</p>
+                  <p className="text-2xl font-bold text-blue-600">{mirror.summary.dsrValue}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{mirror.summary.dsrExplanation}</p>
+                </Card>
+                <Card className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase font-semibold">Adic. Noturno</p>
+                  <p className="text-2xl font-bold text-purple-600">{mirror.summary.nightHours}</p>
+                </Card>
+              </div>
+
+              <div className="p-4 border rounded-md bg-muted/20">
+                <h4 className="text-sm font-semibold mb-3">Trilha de Auditoria e Ajustes</h4>
+                <div className="space-y-1.5">
+                  {mirror.records.flatMap(r => r.punches).filter(p => p.source === 'EDITED' || p.source === 'MANUAL').map((p, idx) => (
+                    <p key={idx} className="text-xs text-muted-foreground">
+                      • {format(new Date(p.timestamp), 'dd/MM HH:mm')} - {p.source === 'EDITED' ? 'Ajustado' : 'Manual'}: {p.justification || 'Sem justificativa'}
+                    </p>
+                  ))}
+                  {mirror.records.filter(r => r.isAbonado).map((r, idx) => (
+                    <p key={idx} className="text-xs text-muted-foreground">
+                      • {format(new Date(r.date + "T00:00:00"), 'dd/MM')} - Ausência Abonada (Atestado Médico/Justificativa)
+                    </p>
+                  ))}
+                  {mirror.records.flatMap(r => r.punches).filter(p => p.source === 'EDITED' || p.source === 'MANUAL').length === 0 && 
+                   mirror.records.filter(r => r.isAbonado).length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">Nenhum ajuste ou abono registrado para este período.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-12 flex flex-col md:flex-row justify-between gap-12 px-10 pb-10">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="border-t border-foreground w-64"></div>
+                  <p className="text-xs font-medium uppercase">{mirror.employee.name}</p>
+                  <p className="text-[10px] text-muted-foreground">Assinatura do Colaborador</p>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="border-t border-foreground w-64"></div>
+                  <p className="text-xs font-medium uppercase">{mirror.company.razaoSocial}</p>
+                  <p className="text-[10px] text-muted-foreground">Representante da Empresa</p>
+                </div>
+              </div>
             </div>
           ) : null}
         </div>
