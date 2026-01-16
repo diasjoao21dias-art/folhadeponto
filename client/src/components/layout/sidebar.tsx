@@ -25,6 +25,10 @@ const sidebarItems = [
   { icon: Clock, label: "Pendências RH", href: "/admin/adjustments" },
   { icon: AlertTriangle, label: "Absenteísmo", href: "/admin/absenteismo" },
   { icon: Calendar, label: "Feriados", href: "/admin/holidays" },
+  { icon: FileText, label: "Exportar ERP", href: "#", onClick: () => {
+    const month = new Date().toISOString().slice(0, 7);
+    window.open(`/api/reports/export/erp?month=${month}`, '_blank');
+  }},
   { icon: Upload, label: "Importar AFD", href: "/admin/import" },
   { icon: ShieldCheck, label: "Auditoria", href: "/admin/audit" },
   { icon: Settings, label: "Configurações", href: "/admin/settings" },
@@ -47,6 +51,23 @@ export function Sidebar() {
       <nav className="flex-1 px-4 space-y-2">
         {sidebarItems.map((item) => {
           const isActive = location === item.href;
+          const isButton = !!item.onClick;
+
+          if (isButton) {
+            return (
+              <div
+                key={item.label}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+                onClick={item.onClick}
+              >
+                <item.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                <span className="font-medium">{item.label}</span>
+              </div>
+            );
+          }
+
           return (
             <Link key={item.href} href={item.href}>
               <div

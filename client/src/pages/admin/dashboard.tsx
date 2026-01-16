@@ -123,6 +123,13 @@ export default function AdminDashboard() {
                   <FileText className="mr-2 h-4 w-4 text-purple-500" />
                   Gerar Espelho de Ponto
                 </Button>
+                <Button variant="default" className="justify-start h-12 text-left bg-blue-600 hover:bg-blue-700" onClick={() => {
+                  const month = format(new Date(), "yyyy-MM");
+                  window.open(`/api/reports/export/erp?month=${month}`, '_blank');
+                }}>
+                  <FileText className="mr-2 h-4 w-4 text-white" />
+                  Exportar Totais para Contabilidade (ERP)
+                </Button>
               </CardContent>
             </Card>
           </div>
