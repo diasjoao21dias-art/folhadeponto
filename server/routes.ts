@@ -238,6 +238,61 @@ export async function registerRoutes(
     res.status(201).json({ message: "Ponto registrado com sucesso", timestamp: now });
   });
 
+  app.get(api.timesheet.listAdjustments.path, async (req, res) => {
+    const user = req.user as User;
+    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
+    const adjs = await storage.getAdjustments(req.query);
+    res.json(adjs);
+  });
+
+  app.post(api.timesheet.createAdjustment.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const user = req.user as User;
+    const adj = await storage.createAdjustment({
+      ...req.body,
+      userId: user.id,
+      timestamp: req.body.timestamp ? new Date(req.body.timestamp) : null,
+    });
+    res.status(201).json(adj);
+  });
+
+  app.post(api.timesheet.processAdjustment.path, async (req, res) => {
+    const user = req.user as User;
+    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
+    const id = Number(req.params.id);
+    const { status, feedback } = req.body;
+    
+    const adj = await storage.getAdjustment(id);
+    if (!adj) return res.status(404).send();
+
+    const updated = await storage.updateAdjustment(id, {
+      status,
+      adminFeedback: feedback,
+      adminId: user.id
+    });
+
+    if (status === 'approved') {
+      if (adj.type === 'MISSING_PUNCH' || adj.type === 'ADJUSTMENT') {
+        await storage.createPunches([{
+          userId: adj.userId,
+          timestamp: adj.timestamp,
+          source: 'WEB',
+          justification: `Aprovado pelo RH: ${adj.justification}`,
+          adjustmentId: adj.id
+        }]);
+      }
+    }
+
+    await storage.createAuditLog({
+      adminId: user.id,
+      targetUserId: adj.userId,
+      action: 'PROCESS_ADJUSTMENT',
+      details: `${status === 'approved' ? 'Aprovado' : 'Rejeitado'} ajuste ID ${id}. Feedback: ${feedback || '-'}`
+    });
+
+    res.json(updated);
+  });
+
   app.get(api.audit.list.path, async (req, res) => {
     const user = req.user as User;
     if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();

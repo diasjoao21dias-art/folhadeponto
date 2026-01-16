@@ -275,6 +275,23 @@ function UserDialog({
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Tipo de Escala</Label>
+              <Select 
+                onValueChange={(val) => form.setValue("scheduleType", val)}
+                defaultValue={form.getValues("scheduleType") || "5x2"}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5x2">5x2 (Seg a Sex)</SelectItem>
+                  <SelectItem value="6x1">6x1 (6 dias trab, 1 folga)</SelectItem>
+                  <SelectItem value="12x36">12x36 (12h trab, 36h folga)</SelectItem>
+                  <SelectItem value="flex">Horário Flexível</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>Status</Label>
               <Select 
                 onValueChange={(val) => form.setValue("active", val === "true")}

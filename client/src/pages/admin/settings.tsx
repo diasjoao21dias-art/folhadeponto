@@ -93,6 +93,37 @@ export default function SettingsPage() {
                     )}
                   </div>
 
+                  <div className="space-y-4 pt-4 border-t">
+                    <h3 className="text-lg font-semibold">Regras de Ponto</h3>
+                    
+                    <div className="space-y-2">
+                      <Label>Regime de Horas Extras</Label>
+                      <Select 
+                        onValueChange={(val) => form.setValue("overtimeRule", val)}
+                        defaultValue={form.getValues("overtimeRule") || "bank"}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bank">Banco de Horas (Compensação)</SelectItem>
+                          <SelectItem value="paid">Pagamento de Horas Extras (100%)</SelectItem>
+                          <SelectItem value="mixed">Misto (50% Banco, 50% Pago)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Tolerância Diária (Minutos)</Label>
+                      <Input 
+                        type="number"
+                        {...form.register("tolerance", { valueAsNumber: true })}
+                        placeholder="Ex: 10"
+                      />
+                      <p className="text-xs text-muted-foreground">Minutos permitidos de variação por dia conforme CLT.</p>
+                    </div>
+                  </div>
+
                   <div className="flex justify-end pt-4">
                     <Button type="submit" className="w-full sm:w-auto" disabled={updateSettings.isPending}>
                       {updateSettings.isPending ? (

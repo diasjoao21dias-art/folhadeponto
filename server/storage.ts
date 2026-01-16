@@ -1,6 +1,6 @@
 import { db } from "./db";
 import {
-  users, companySettings, afdFiles, punches, auditLogs, holidays,
+  users, companySettings, afdFiles, punches, auditLogs, holidays, punchAdjustments,
   type User, type InsertUser, type CompanySettings, type InsertCompanySettings,
   type AfdFile, type Punch, type AuditLog
 } from "@shared/schema";
@@ -27,6 +27,10 @@ export interface IStorage {
   getHolidays(): Promise<any[]>;
   createHoliday(holiday: any): Promise<any>;
   deleteHoliday(id: number): Promise<void>;
+  createAdjustment(adj: any): Promise<any>;
+  getAdjustments(filters?: any): Promise<any[]>;
+  getAdjustment(id: number): Promise<any | undefined>;
+  updateAdjustment(id: number, data: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -114,6 +118,29 @@ export class DatabaseStorage implements IStorage {
   }
   async deleteHoliday(id: number): Promise<void> {
     await db.delete(holidays).where(eq(holidays.id, id));
+  }
+  async createAdjustment(adj: any): Promise<any> {
+    const [result] = await db.insert(punchAdjustments).values(adj).returning();
+    return result;
+  }
+  async getAdjustments(filters: any = {}): Promise<any[]> {
+    let query = db.select().from(punchAdjustments);
+    if (filters.status) query = query.where(eq(punchAdjustments.status, filters.status)) as any;
+    const logs = await query.orderBy(desc(punchAdjustments.createdAt));
+    const result = [];
+    for (const log of logs) {
+      const user = await this.getUser(log.userId);
+      result.push({ ...log, userName: user?.name || "-" });
+    }
+    return result;
+  }
+  async getAdjustment(id: number): Promise<any | undefined> {
+    const [adj] = await db.select().from(punchAdjustments).where(eq(punchAdjustments.id, id));
+    return adj;
+  }
+  async updateAdjustment(id: number, data: any): Promise<any> {
+    const [updated] = await db.update(punchAdjustments).set(data).where(eq(punchAdjustments.id, id)).returning();
+    return updated;
   }
 }
 

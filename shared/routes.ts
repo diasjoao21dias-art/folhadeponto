@@ -179,6 +179,40 @@ export const api = {
         401: errorSchemas.unauthorized,
       },
     },
+    listAdjustments: {
+      method: 'GET' as const,
+      path: '/api/timesheet/adjustments',
+      responses: {
+        200: z.array(z.any()),
+        403: errorSchemas.unauthorized,
+      },
+    },
+    createAdjustment: {
+      method: 'POST' as const,
+      path: '/api/timesheet/adjustments',
+      input: z.object({
+        type: z.string(),
+        timestamp: z.string().optional(),
+        justification: z.string(),
+        attachmentUrl: z.string().optional(),
+      }),
+      responses: {
+        201: z.any(),
+        401: errorSchemas.unauthorized,
+      },
+    },
+    processAdjustment: {
+      method: 'POST' as const,
+      path: '/api/timesheet/adjustments/:id/process',
+      input: z.object({
+        status: z.enum(['approved', 'rejected']),
+        feedback: z.string().optional(),
+      }),
+      responses: {
+        200: z.any(),
+        403: errorSchemas.unauthorized,
+      },
+    },
   },
   audit: {
     list: {

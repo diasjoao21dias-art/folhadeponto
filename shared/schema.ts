@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   pis: text("pis"), // Essential for AFD linking
   active: boolean("active").default(true),
   cargo: text("cargo"),
+  scheduleType: text("schedule_type").default("5x2"), // '5x2', '6x1', '12x36', 'flex'
   workSchedule: text("work_schedule").default("08:00-12:00,13:00-17:00"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -24,6 +25,8 @@ export const companySettings = pgTable("company_settings", {
   razaoSocial: text("razao_social").notNull(),
   cnpj: text("cnpj").notNull(),
   endereco: text("endereco").notNull(),
+  overtimeRule: text("overtime_rule").default("bank"), // 'bank' | 'pay'
+  bankExpirationMonths: integer("bank_expiration_months").default(6),
 });
 
 export const holidays = pgTable("holidays", {
@@ -40,14 +43,28 @@ export const afdFiles = pgTable("afd_files", {
   recordCount: integer("record_count").default(0),
 });
 
+export const punchAdjustments = pgTable("punch_adjustments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(), // 'MISSING_PUNCH', 'MEDICAL_CERTIFICATE', 'ADJUSTMENT'
+  timestamp: timestamp("timestamp"),
+  justification: text("justification").notNull(),
+  attachmentUrl: text("attachment_url"),
+  status: text("status").default("pending"), // 'pending', 'approved', 'rejected'
+  adminId: integer("admin_id").references(() => users.id),
+  adminFeedback: text("admin_feedback"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const punches = pgTable("punches", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
   timestamp: timestamp("timestamp").notNull(),
   rawLine: text("raw_line"), // Original AFD line for traceability
   afdId: integer("afd_id").references(() => afdFiles.id),
-  source: text("source").default("AFD"), // 'AFD' | 'MANUAL' | 'EDITED'
+  source: text("source").default("AFD"), // 'AFD' | 'MANUAL' | 'EDITED' | 'WEB'
   justification: text("justification"),
+  adjustmentId: integer("adjustment_id").references(() => punchAdjustments.id),
 });
 
 export const auditLogs = pgTable("audit_logs", {
@@ -101,6 +118,7 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
 export const insertCompanySchema = createInsertSchema(companySettings).omit({ id: true });
 export const insertPunchSchema = createInsertSchema(punches).omit({ id: true });
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, timestamp: true });
+export const insertPunchAdjustmentSchema = createInsertSchema(punchAdjustments).omit({ id: true, createdAt: true, status: true, adminId: true, adminFeedback: true });
 
 // === EXPLICIT API CONTRACT TYPES ===
 
@@ -111,6 +129,8 @@ export type InsertCompanySettings = z.infer<typeof insertCompanySchema>;
 export type AfdFile = typeof afdFiles.$inferSelect;
 export type Punch = typeof punches.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type PunchAdjustment = typeof punchAdjustments.$inferSelect;
+export type InsertPunchAdjustment = z.infer<typeof insertPunchAdjustmentSchema>;
 
 // Request types
 export type CreateUserRequest = InsertUser;

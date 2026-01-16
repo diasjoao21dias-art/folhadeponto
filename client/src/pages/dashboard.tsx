@@ -112,6 +112,16 @@ export default function EmployeeDashboard() {
               <p className="text-xs text-blue-100 opacity-90 text-center">
                 Sua localização e horário serão registrados de forma segura.
               </p>
+              
+              <div className="pt-4 border-t border-white/20">
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-white/10 border-white/30 text-white hover:bg-white/20"
+                  onClick={() => window.location.href = '#justification'}
+                >
+                  Solicitar Ajuste ou Atestado
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
