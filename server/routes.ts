@@ -240,7 +240,7 @@ export async function registerRoutes(
 
     return {
       employee: user,
-      company: company || { razaoSocial: "Empresa", cnpj: "00.000.000/0000-00", endereco: "Endereço" },
+      company: company || { razaoSocial: "Empresa não configurada", cnpj: "00.000.000/0000-00", endereco: "Endereço" },
       period: monthStr,
       records: dailyRecords,
       summary: {
@@ -396,6 +396,18 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.status(401).send();
     const user = req.user as User;
     const now = new Date();
+    
+    // Validação de batidas duplicadas (mesmo minuto)
+    const startOfMinute = new Date(now);
+    startOfMinute.setSeconds(0, 0);
+    const endOfMinute = new Date(now);
+    endOfMinute.setSeconds(59, 999);
+    
+    const existingPunches = await storage.getPunchesByPeriod(user.id, startOfMinute, endOfMinute);
+    if (existingPunches.length > 0) {
+      return res.status(400).json({ message: "Já existe um registro de ponto para este minuto. Aguarde um instante para registrar novamente." });
+    }
+
     await storage.createPunches([{ 
       userId: user.id, 
       timestamp: now, 
