@@ -101,37 +101,120 @@ export default function TimesheetPage() {
 
   const handleExportPDF = () => {
     if (!mirror) return;
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("ESPELHO DE PONTO", 105, 15, { align: "center" });
-    doc.setFontSize(10);
-    
+    // Orientação paisagem para caber mais informações
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4"
+    });
+
     const company = mirror.company || { razaoSocial: "-", cnpj: "-", endereco: "-" };
-    doc.text(`Empresa: ${company.razaoSocial}`, 14, 25);
-    doc.text(`CNPJ: ${company.cnpj}`, 14, 30);
-    doc.text(`Endereço: ${company.endereco}`, 14, 35);
     
-    doc.text(`Funcionário: ${mirror.employee.name}`, 14, 45);
-    doc.text(`CPF: ${mirror.employee.cpf || '-'}`, 14, 50);
-    doc.text(`Cargo: ${mirror.employee.cargo || '-'}`, 14, 55);
-    doc.text(`Período: ${mirror.period}`, 150, 45);
+    // Cabeçalho Profissional
+    doc.setFillColor(240, 240, 240);
+    doc.rect(0, 0, 297, 40, 'F');
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 40);
+    doc.text("ESPELHO DE PONTO ELETRÔNICO", 148.5, 15, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 283, 35, { align: "right" });
+
+    // Informações da Empresa e Funcionário em Colunas
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(40, 40, 40);
+    doc.text("DADOS DA EMPRESA", 14, 50);
+    doc.text("DADOS DO COLABORADOR", 148.5, 50);
+    
+    doc.line(14, 52, 130, 52);
+    doc.line(148.5, 52, 283, 52);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`Razão Social: ${company.razaoSocial}`, 14, 58);
+    doc.text(`CNPJ: ${company.cnpj}`, 14, 63);
+    doc.text(`Endereço: ${company.endereco}`, 14, 68);
+    
+    doc.text(`Nome: ${mirror.employee.name}`, 148.5, 58);
+    doc.text(`CPF: ${mirror.employee.cpf || '-'}`, 148.5, 63);
+    doc.text(`Cargo: ${mirror.employee.cargo || '-'}`, 148.5, 68);
+    doc.text(`PIS/PASEP: ${mirror.employee.pis || '-'}`, 220, 63);
+    doc.text(`Período: ${format(new Date(mirror.period + "-01T00:00:00"), "MMMM 'de' yyyy", { locale: ptBR })}`, 220, 68);
+
     const tableBody = mirror.records.map(r => [
-      format(new Date(r.date + "T00:00:00"), "dd/MM/yyyy"),
-      r.isDayOff ? "FOLGA" : r.punches[0]?.timestamp ? format(new Date(r.punches[0].timestamp), "HH:mm") : "",
-      r.isDayOff ? "" : r.punches[1]?.timestamp ? format(new Date(r.punches[1].timestamp), "HH:mm") : "",
-      r.isDayOff ? "" : r.punches[2]?.timestamp ? format(new Date(r.punches[2].timestamp), "HH:mm") : "",
-      r.isDayOff ? "" : r.punches[3]?.timestamp ? format(new Date(r.punches[3].timestamp), "HH:mm") : "",
+      format(new Date(r.date + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR }),
+      r.isDayOff ? (r.holidayDescription || "FOLGA") : r.punches[0]?.timestamp ? format(new Date(r.punches[0].timestamp), "HH:mm") : "-",
+      r.isDayOff ? "" : r.punches[1]?.timestamp ? format(new Date(r.punches[1].timestamp), "HH:mm") : "-",
+      r.isDayOff ? "" : r.punches[2]?.timestamp ? format(new Date(r.punches[2].timestamp), "HH:mm") : "-",
+      r.isDayOff ? "" : r.punches[3]?.timestamp ? format(new Date(r.punches[3].timestamp), "HH:mm") : "-",
+      r.isDayOff ? "" : r.punches[4]?.timestamp ? format(new Date(r.punches[4].timestamp), "HH:mm") : "-",
+      r.isDayOff ? "" : r.punches[5]?.timestamp ? format(new Date(r.punches[5].timestamp), "HH:mm") : "-",
       r.totalHours,
       r.balance
     ]);
-    autoTable(doc, { startY: 65, head: [['Data', 'Ent 1', 'Sai 1', 'Ent 2', 'Sai 2', 'Total', 'Saldo']], body: tableBody, theme: 'grid', headStyles: { fillColor: [66, 66, 66] } });
+
+    autoTable(doc, {
+      startY: 75,
+      head: [['Data', 'Ent 1', 'Sai 1', 'Ent 2', 'Sai 2', 'Ent 3', 'Sai 3', 'Total', 'Saldo']],
+      body: tableBody,
+      theme: 'grid',
+      headStyles: { 
+        fillColor: [51, 51, 51], 
+        textColor: [255, 255, 255],
+        fontSize: 9,
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 35 },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' },
+        7: { halign: 'right', fontStyle: 'bold' },
+        8: { halign: 'right', fontStyle: 'bold' }
+      },
+      styles: { fontSize: 8 },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 8) {
+          const val = data.cell.text[0];
+          if (val.startsWith('-')) data.cell.styles.textColor = [200, 0, 0];
+          else if (val !== '00:00' && val.startsWith('+')) data.cell.styles.textColor = [0, 120, 0];
+        }
+      }
+    });
+
     const finalY = (doc as any).lastAutoTable.finalY || 150;
-    doc.text("Resumo:", 14, finalY + 10);
-    doc.text(`Total Horas: ${mirror.summary.totalHours}`, 14, finalY + 15);
-    doc.text(`Total Extras: ${mirror.summary.totalOvertime}`, 70, finalY + 15);
-    doc.text(`Total Negativo: ${mirror.summary.totalNegative}`, 130, finalY + 15);
-    doc.text(`Saldo Final: ${mirror.summary.finalBalance}`, 14, finalY + 22);
-    doc.save(`espelho_ponto_${mirror.employee.name}_${mirror.period}.pdf`);
+    
+    // Resumo e Assinaturas
+    doc.setFillColor(250, 250, 250);
+    doc.rect(14, finalY + 5, 100, 35, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(14, finalY + 5, 100, 35, 'S');
+
+    doc.setFont("helvetica", "bold");
+    doc.text("RESUMO DO PERÍODO", 18, finalY + 12);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Total de Horas Trabalhadas: ${mirror.summary.totalHours}`, 18, finalY + 20);
+    doc.text(`Total de Horas Extras (+): ${mirror.summary.totalOvertime}`, 18, finalY + 25);
+    doc.text(`Total de Atrasos/Faltas (-): ${mirror.summary.totalNegative}`, 18, finalY + 30);
+    doc.setFont("helvetica", "bold");
+    doc.text(`SALDO FINAL: ${mirror.summary.finalBalance}`, 18, finalY + 36);
+
+    // Campos de Assinatura
+    const sigY = finalY + 55;
+    doc.line(30, sigY, 120, sigY);
+    doc.text("Assinatura do Colaborador", 75, sigY + 5, { align: "center" });
+    
+    doc.line(177, sigY, 267, sigY);
+    doc.text("Assinatura do Gestor / RH", 222, sigY + 5, { align: "center" });
+
+    doc.save(`espelho_ponto_${mirror.employee.name.replace(/\s+/g, '_')}_${mirror.period}.pdf`);
   };
 
   return (
