@@ -105,9 +105,12 @@ export default function TimesheetPage() {
     doc.setFontSize(14);
     doc.text("ESPELHO DE PONTO", 105, 15, { align: "center" });
     doc.setFontSize(10);
-    doc.text(`Empresa: ${mirror.company.razaoSocial}`, 14, 25);
-    doc.text(`CNPJ: ${mirror.company.cnpj}`, 14, 30);
-    doc.text(`Endereço: ${mirror.company.endereco}`, 14, 35);
+    
+    const company = mirror.company || { razaoSocial: "-", cnpj: "-", endereco: "-" };
+    doc.text(`Empresa: ${company.razaoSocial}`, 14, 25);
+    doc.text(`CNPJ: ${company.cnpj}`, 14, 30);
+    doc.text(`Endereço: ${company.endereco}`, 14, 35);
+    
     doc.text(`Funcionário: ${mirror.employee.name}`, 14, 45);
     doc.text(`CPF: ${mirror.employee.cpf || '-'}`, 14, 50);
     doc.text(`Cargo: ${mirror.employee.cargo || '-'}`, 14, 55);
