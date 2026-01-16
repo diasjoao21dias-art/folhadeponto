@@ -122,29 +122,21 @@ export async function registerRoutes(
     }
   });
 
-  app.get(api.timesheet.getMirror.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).send();
-    const userId = Number(req.params.userId);
-    const monthStr = req.query.month as string;
-    if (!userId || !monthStr) return res.status(400).json({ message: "Missing userId or month" });
-    
+  async function calculateMonthlySummary(userId: number, monthStr: string) {
     const user = await storage.getUser(userId);
     const company = await storage.getCompanySettings();
     const holidays = await storage.getHolidays();
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) throw new Error("User not found");
 
     const startDate = startOfMonth(parse(monthStr, 'yyyy-MM', new Date()));
     const endDate = endOfMonth(startDate);
     endDate.setHours(23, 59, 59);
     
     const punches = await storage.getPunchesByPeriod(userId, startDate, endDate);
-    // Configs from company
     const tolerance = company?.tolerance ?? 10;
     const nightStartStr = company?.nightShiftStart ?? "22:00";
     const nightEndStr = company?.nightShiftEnd ?? "05:00";
-    const nightBonus = company?.nightShiftBonus ?? 20;
 
-    // Parse work schedule (e.g., "08:00-12:00,13:00-17:00")
     const schedule = user.workSchedule || "08:00-12:00,13:00-17:00";
     const expectedDailyMinutes = schedule.split(',').reduce((total, part) => {
       const [start, end] = part.split('-');
@@ -154,19 +146,17 @@ export async function registerRoutes(
       return total + ((eH * 60 + eM) - (sH * 60 + sM));
     }, 0);
 
-    const dailyRecords: DailyRecord[] = [];
     const days = eachDayOfInterval({ start: startDate, end: endDate });
-    
     let totalMinutes = 0;
     let totalNightMinutes = 0;
     let totalNightMinutesForBonus = 0;
     
     const workDaysInMonth = days.filter(d => !isWeekend(d) && !holidays.find(h => h.date === format(d, 'yyyy-MM-dd'))).length;
     const dsrDaysInMonth = days.length - workDaysInMonth;
-
     const adjustments = await storage.getAdjustments({ userId });
     const approvedAdjustments = adjustments.filter(a => a.status === 'approved');
 
+    const dailyRecords: DailyRecord[] = [];
     days.forEach(day => {
       const dateKey = format(day, 'yyyy-MM-dd');
       const dayPunches = punches.filter(p => format(p.timestamp!, 'yyyy-MM-dd') === dateKey)
@@ -248,21 +238,68 @@ export async function registerRoutes(
     const overtimeMinutes = totalMinutes > 0 ? totalMinutes : 0;
     const dsrReflexMinutes = workDaysInMonth > 0 ? Math.round((overtimeMinutes + totalNightMinutesForBonus) / workDaysInMonth * dsrDaysInMonth) : 0;
 
-    res.json({ 
-      employee: user, 
-      company: company!, 
-      period: monthStr, 
-      records: dailyRecords, 
-      summary: { 
-        totalHours: formatMinutes(totalMinutes > 0 ? totalMinutes : 0), 
-        totalOvertime: formatMinutes(overtimeMinutes), 
-        totalNegative: totalMinutes < 0 ? formatMinutes(Math.abs(totalMinutes)) : "00:00", 
+    return {
+      employee: user,
+      company: company!,
+      period: monthStr,
+      records: dailyRecords,
+      summary: {
+        totalHours: formatMinutes(totalMinutes > 0 ? totalMinutes : 0),
+        totalOvertime: formatMinutes(overtimeMinutes),
+        totalNegative: totalMinutes < 0 ? formatMinutes(Math.abs(totalMinutes)) : "00:00",
         finalBalance: formatMinutes(Math.abs(totalMinutes), totalMinutes < 0 ? '-' : '+'),
         nightHours: formatMinutes(totalNightMinutes),
         dsrValue: formatMinutes(dsrReflexMinutes),
         dsrExplanation: `Reflexo de HE + Adic. Noturno (${workDaysInMonth} dias úteis, ${dsrDaysInMonth} DSRs)`
-      } 
-    });
+      }
+    };
+  }
+
+  app.get(api.timesheet.getMirror.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const userId = Number(req.params.userId);
+    const monthStr = req.query.month as string;
+    if (!userId || !monthStr) return res.status(400).json({ message: "Missing userId or month" });
+    
+    try {
+      const result = await calculateMonthlySummary(userId, monthStr);
+      res.json(result);
+    } catch (err: any) {
+      res.status(404).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/reports/export/erp", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const monthStr = req.query.month as string;
+    if (!monthStr) return res.status(400).json({ message: "Missing month" });
+
+    const allUsers = await storage.getUsers();
+    const exportData = [];
+
+    for (const user of allUsers) {
+      try {
+        const data = await calculateMonthlySummary(user.id, monthStr);
+        exportData.push({
+          employeeId: user.id,
+          name: user.name,
+          pis: user.pis,
+          cpf: user.cpf,
+          period: monthStr,
+          totals: {
+            overtime: data.summary.totalOvertime,
+            nightShift: data.summary.nightHours,
+            dsr: data.summary.dsrValue,
+            negativeHours: data.summary.totalNegative
+          }
+        });
+      } catch (err) {
+        // Skip users with no data or errors
+        continue;
+      }
+    }
+
+    res.json(exportData);
   });
 
   // Export Layouts AFDT/ACJEF (Stub)

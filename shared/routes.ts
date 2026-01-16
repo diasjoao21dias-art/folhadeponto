@@ -214,6 +214,16 @@ export const api = {
       },
     },
   },
+  reports: {
+    exportErp: {
+      method: 'GET' as const,
+      path: '/api/reports/export/erp',
+      responses: {
+        200: z.any(),
+        401: errorSchemas.unauthorized,
+      },
+    },
+  },
   audit: {
     list: {
       method: 'GET' as const,
