@@ -14,13 +14,22 @@ export const users = pgTable("users", {
   cpf: text("cpf"),
   pis: text("pis"), // Essential for AFD linking
   active: boolean("active").default(true),
-  cargo: text("cargo"),
+  cargoId: integer("cargo_id").references(() => cargos.id),
   scheduleType: text("schedule_type").default("5x2"), // '5x2', '6x1', '12x36', 'flex'
   workSchedule: text("work_schedule").default("08:00-12:00,13:00-17:00"),
   allowedLat: text("allowed_lat"), // Geofencing
   allowedLng: text("allowed_lng"), // Geofencing
   allowedRadius: integer("allowed_radius").default(200), // In meters
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const cargos = pgTable("cargos", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  nightBonus: integer("night_bonus").default(20),
+  nightStart: text("night_start").default("22:00"),
+  nightEnd: text("night_end").default("05:00"),
+  applyNightExtension: boolean("apply_night_extension").default(true),
 });
 
 export const companySettings = pgTable("company_settings", {
@@ -131,6 +140,7 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
 // === BASE SCHEMAS ===
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const insertCargoSchema = createInsertSchema(cargos).omit({ id: true });
 export const insertCompanySchema = createInsertSchema(companySettings).omit({ id: true });
 export const insertPunchSchema = createInsertSchema(punches).omit({ id: true });
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, timestamp: true });
@@ -138,8 +148,10 @@ export const insertPunchAdjustmentSchema = createInsertSchema(punchAdjustments).
 
 // === EXPLICIT API CONTRACT TYPES ===
 
-export type User = typeof users.$inferSelect;
+export type User = typeof users.$inferSelect & { cargo?: typeof cargos.$inferSelect };
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Cargo = typeof cargos.$inferSelect;
+export type InsertCargo = z.infer<typeof insertCargoSchema>;
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = z.infer<typeof insertCompanySchema>;
 export type AfdFile = typeof afdFiles.$inferSelect;

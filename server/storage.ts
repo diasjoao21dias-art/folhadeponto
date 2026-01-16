@@ -1,8 +1,8 @@
 import { db } from "./db";
 import {
-  users, companySettings, afdFiles, punches, auditLogs, holidays, punchAdjustments,
+  users, companySettings, afdFiles, punches, auditLogs, holidays, punchAdjustments, cargos,
   type User, type InsertUser, type CompanySettings, type InsertCompanySettings,
-  type AfdFile, type Punch, type AuditLog
+  type AfdFile, type Punch, type AuditLog, type Cargo, type InsertCargo
 } from "@shared/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 
@@ -31,16 +31,48 @@ export interface IStorage {
   getAdjustments(filters?: any): Promise<any[]>;
   getAdjustment(id: number): Promise<any | undefined>;
   updateAdjustment(id: number, data: any): Promise<any>;
+  getCargos(): Promise<Cargo[]>;
+  getCargo(id: number): Promise<Cargo | undefined>;
+  createCargo(cargo: InsertCargo): Promise<Cargo>;
 }
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const [result] = await db
+      .select({
+        user: users,
+        cargo: cargos,
+      })
+      .from(users)
+      .leftJoin(cargos, eq(users.cargoId, cargos.id))
+      .where(eq(users.id, id));
+    
+    if (!result) return undefined;
+    return { ...result.user, cargo: result.cargo ?? undefined } as User;
   }
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    const [result] = await db
+      .select({
+        user: users,
+        cargo: cargos,
+      })
+      .from(users)
+      .leftJoin(cargos, eq(users.cargoId, cargos.id))
+      .where(eq(users.username, username));
+    
+    if (!result) return undefined;
+    return { ...result.user, cargo: result.cargo ?? undefined } as User;
+  }
+  async getCargos(): Promise<Cargo[]> {
+    return await db.select().from(cargos);
+  }
+  async getCargo(id: number): Promise<Cargo | undefined> {
+    const [cargo] = await db.select().from(cargos).where(eq(cargos.id, id));
+    return cargo;
+  }
+  async createCargo(cargo: InsertCargo): Promise<Cargo> {
+    const [newCargo] = await db.insert(cargos).values(cargo).returning();
+    return newCargo;
   }
   async getUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(users.name);

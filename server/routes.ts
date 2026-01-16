@@ -164,7 +164,13 @@ export async function registerRoutes(
       const isOff = isWeekend(day) || !!holiday;
       
       let dailyTotalMinutes = 0;
-      let dailyNightMinutes = 0;
+      let dailyNightMinutesForBank = 0; // Decimals handled via floats internally
+      let dailyNightMinutesForBonus = 0;
+
+      const cargo = (user as any).cargo; // Assuming joined in storage
+      const nsStart = cargo?.nightStart || nightStartStr;
+      const nsEnd = cargo?.nightEnd || nightEndStr;
+      const applyExtension = cargo?.applyNightExtension ?? true;
 
       for (let i = 0; i < dayPunches.length; i += 2) {
         if (i + 1 < dayPunches.length) {
@@ -173,20 +179,20 @@ export async function registerRoutes(
           const diff = differenceInMinutes(end, start);
           dailyTotalMinutes += diff;
 
-          // Night shift calculation (simplified for MVP)
-          // 52.5 minutes = 1 hour (reduction 7/8 or ~1.1428x)
-          // Standard night is 22:00 to 05:00
-          const sH = start.getHours();
-          const eH = end.getHours();
-          if (sH >= 22 || sH < 5 || eH >= 22 || eH < 5) {
-            // Very basic estimation: if any part of the punch is in night shift
-            // In a production system we'd calculate exact overlap
-            const nightOverlap = calculateNightOverlap(start, end, nightStartStr, nightEndStr);
-            if (nightOverlap > 0) {
-              // Add reduced hour effect (52min 30sec = 60min)
-              // Factor = 60 / 52.5 = 1.1428
-              const reducedNightMinutes = Math.round(nightOverlap * 1.1428);
-              dailyNightMinutes += reducedNightMinutes;
+          const nightOverlap = calculateNightOverlap(start, end, nsStart, nsEnd);
+          
+          if (nightOverlap > 0) {
+            // Factor 1.142857 for precision
+            dailyNightMinutesForBank += nightOverlap * 1.142857;
+            dailyNightMinutesForBonus += nightOverlap;
+
+            // Prorrogação (Extension)
+            if (applyExtension && end.getHours() >= parseInt(nsEnd.split(':')[0])) {
+               const extensionMinutes = differenceInMinutes(end, parseISO(`${format(end, 'yyyy-MM-dd')}T${nsEnd}:00`));
+               if (extensionMinutes > 0) {
+                  dailyNightMinutesForBank += extensionMinutes * 1.142857;
+                  dailyNightMinutesForBonus += extensionMinutes;
+               }
             }
           }
         }
@@ -201,7 +207,8 @@ export async function registerRoutes(
 
       const balanceMinutes = isOff ? adjustedDailyMinutes : adjustedDailyMinutes - expectedDailyMinutes;
       if (!isOff || adjustedDailyMinutes > 0) totalMinutes += balanceMinutes;
-      totalNightMinutes += dailyNightMinutes;
+      
+      totalNightMinutes += Math.round(dailyNightMinutesForBank);
       
       dailyRecords.push({ 
         date: dateKey, 
@@ -435,6 +442,23 @@ function formatMinutes(minutes: number, prefix = ''): string {
 async function seedAdminUser() {
   const admin = await storage.getUserByUsername("admin");
   if (!admin) {
-    await storage.createUser({ username: "admin", password: "admin", role: "admin", name: "Administrador", cpf: "00000000000", pis: "00000000000", active: true, cargo: "Gestor" });
+    const [defaultCargo] = await db.insert(cargos).values({
+      name: "Gestão",
+      nightBonus: 20,
+      nightStart: "22:00",
+      nightEnd: "05:00",
+      applyNightExtension: true
+    }).returning();
+    
+    await storage.createUser({ 
+      username: "admin", 
+      password: "admin", 
+      role: "admin", 
+      name: "Administrador", 
+      cpf: "00000000000", 
+      pis: "00000000000", 
+      active: true, 
+      cargoId: defaultCargo.id 
+    });
   }
 }
