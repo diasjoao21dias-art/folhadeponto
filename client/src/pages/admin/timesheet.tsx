@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, FileSpreadsheet, Loader2, Printer, Edit2, Plus, Trash2 } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Printer, Edit2, Plus, Trash2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import jsPDF from "jspdf";
@@ -269,9 +269,13 @@ export default function TimesheetPage() {
                   </TableHeader>
                   <TableBody>
                     {mirror.records.map((record, i) => (
-                      <TableRow key={i} className={record.isDayOff ? "bg-muted/30" : ""}>
+                      <TableRow key={i} className={`${record.isDayOff ? "bg-muted/30" : ""} ${record.isInconsistent ? "bg-red-50" : ""} ${record.lunchViolation ? "bg-orange-50" : ""}`}>
                         <TableCell className="font-medium whitespace-nowrap">
-                          {format(new Date(record.date + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR })}
+                          <div className="flex items-center gap-1">
+                            {format(new Date(record.date + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR })}
+                            {record.isInconsistent && <AlertCircle className="h-3 w-3 text-red-500" title="Batidas ímpares detectadas" />}
+                            {record.lunchViolation && <AlertCircle className="h-3 w-3 text-orange-500" title="Intervalo de almoço inferior a 1h" />}
+                          </div>
                           <Button variant="ghost" size="icon" className="h-6 w-6 ml-2" onClick={() => handleAdd(record.date)}><Plus className="h-3 w-3" /></Button>
                         </TableCell>
                         {[0, 1, 2, 3].map(idx => (

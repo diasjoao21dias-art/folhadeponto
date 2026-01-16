@@ -176,6 +176,8 @@ export interface DailyRecord {
   holidayDescription?: string;
   isAbonado?: boolean;
   nightHours?: string;
+  isInconsistent?: boolean;
+  lunchViolation?: boolean;
 }
 
 export interface MonthlyMirrorResponse {

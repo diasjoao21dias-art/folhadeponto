@@ -13,6 +13,7 @@ import {
   type AfdFile, type Punch, type AuditLog, type Cargo, type InsertCargo
 } from "@shared/schema";
 import { DailyRecord } from "@shared/schema";
+import { eq, and, gte, lte } from "drizzle-orm";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -212,11 +213,25 @@ export async function registerRoutes(
       let adjustedDailyMinutes = dailyTotalMinutes;
       if (abono) {
         adjustedDailyMinutes = expectedDailyMinutes;
-      } else {
-        const diffFromExpected = Math.abs(dailyTotalMinutes - expectedDailyMinutes);
-        if (!isOff && diffFromExpected <= tolerance) {
+      } else if (!isOff) {
+        // Art. 58 CLT: Tolerance of 5 min per punch, max 10 min per day
+        const diffFromExpected = dailyTotalMinutes - expectedDailyMinutes;
+        if (Math.abs(diffFromExpected) <= tolerance) {
           adjustedDailyMinutes = expectedDailyMinutes;
         }
+      }
+
+      // Check for odd punches (inconsistent day)
+      const isInconsistent = !isOff && dayPunches.length % 2 !== 0;
+
+      // Check for lunch break (intrajornada) violation
+      // Jornada > 6h requires min 1h (60 min)
+      let lunchViolation = false;
+      if (expectedDailyMinutes > 360 && dayPunches.length >= 4) {
+        const breakStart = dayPunches[1].timestamp!;
+        const breakEnd = dayPunches[2].timestamp!;
+        const breakDiff = differenceInMinutes(breakEnd, breakStart);
+        if (breakDiff < 60) lunchViolation = true;
       }
 
       const balanceMinutes = isOff ? adjustedDailyMinutes : adjustedDailyMinutes - expectedDailyMinutes;
@@ -232,8 +247,10 @@ export async function registerRoutes(
         balance: formatMinutes(Math.abs(balanceMinutes), balanceMinutes < 0 ? '-' : '+'), 
         isDayOff: isOff,
         holidayDescription: holiday?.description,
-        isAbonado: !!abono
-      });
+        isAbonado: !!abono,
+        isInconsistent,
+        lunchViolation
+      } as any);
     });
 
     const overtimeMinutes = totalMinutes > 0 ? totalMinutes : 0;
