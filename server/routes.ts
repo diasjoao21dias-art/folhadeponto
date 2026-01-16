@@ -596,13 +596,31 @@ export async function registerRoutes(
     const user = req.user as User;
     if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
     const holiday = await storage.createHoliday(req.body);
+    await storage.createAuditLog({
+      adminId: user.id,
+      action: 'CREATE_HOLIDAY',
+      details: `Adicionado feriado: ${holiday.description} em ${holiday.date}`,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    });
     res.status(201).json(holiday);
   });
 
   app.delete("/api/holidays/:id", async (req, res) => {
     const user = req.user as User;
     if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
-    await storage.deleteHoliday(Number(req.params.id));
+    const holidayId = Number(req.params.id);
+    const holiday = await db.select().from(holidays).where(eq(holidays.id, holidayId)).limit(1);
+    await storage.deleteHoliday(holidayId);
+    if (holiday.length > 0) {
+      await storage.createAuditLog({
+        adminId: user.id,
+        action: 'DELETE_HOLIDAY',
+        details: `Removido feriado: ${holiday[0].description} de ${holiday[0].date}`,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent')
+      });
+    }
     res.status(204).send();
   });
 
