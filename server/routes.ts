@@ -275,31 +275,23 @@ export async function registerRoutes(
     if (!monthStr) return res.status(400).json({ message: "Missing month" });
 
     const allUsers = await storage.getUsers();
-    const exportData = [];
+    
+    // Header do CSV
+    let csv = "ID;Nome;PIS;CPF;Periodo;Horas Extras;Adicional Noturno;DSR;Horas Negativas\n";
 
     for (const user of allUsers) {
       try {
         const data = await calculateMonthlySummary(user.id, monthStr);
-        exportData.push({
-          employeeId: user.id,
-          name: user.name,
-          pis: user.pis,
-          cpf: user.cpf,
-          period: monthStr,
-          totals: {
-            overtime: data.summary.totalOvertime,
-            nightShift: data.summary.nightHours,
-            dsr: data.summary.dsrValue,
-            negativeHours: data.summary.totalNegative
-          }
-        });
+        csv += `${user.id};${user.name};${user.pis || ""};${user.cpf || ""};${monthStr};${data.summary.totalOvertime};${data.summary.nightHours};${data.summary.dsrValue};${data.summary.totalNegative}\n`;
       } catch (err) {
-        // Skip users with no data or errors
         continue;
       }
     }
 
-    res.json(exportData);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=Export_ERP_${monthStr}.csv`);
+    // Adicionar BOM para Excel reconhecer UTF-8 corretamente
+    res.send("\ufeff" + csv);
   });
 
   // Export Layouts AFDT/ACJEF (Stub)
