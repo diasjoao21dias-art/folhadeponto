@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { LogOut, Clock, CalendarDays, MousePointer2, Loader2, AlertCircle } from "lucide-react";
+import { LogOut, Clock, CalendarDays, MousePointer2, Loader2, AlertCircle, FileText, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function EmployeeDashboard() {
   const { user, logoutMutation } = useAuth();
@@ -30,6 +32,71 @@ export default function EmployeeDashboard() {
     },
     enabled: !!user,
   });
+
+  const handleExportPDF = () => {
+    if (!mirror) return;
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4"
+    });
+
+    const company = mirror.company || { razaoSocial: "-", cnpj: "-", endereco: "-" };
+    
+    doc.setFillColor(240, 240, 240);
+    doc.rect(0, 0, 297, 40, 'F');
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 40);
+    doc.text("ESPELHO DE PONTO ELETRÔNICO", 148.5, 15, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 283, 35, { align: "right" });
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(40, 40, 40);
+    doc.text("DADOS DA EMPRESA", 14, 50);
+    doc.text("DADOS DO COLABORADOR", 148.5, 50);
+    
+    doc.line(14, 52, 130, 52);
+    doc.line(148.5, 52, 283, 52);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`Razão Social: ${company.razaoSocial}`, 14, 58);
+    doc.text(`CNPJ: ${company.cnpj}`, 14, 63);
+    doc.text(`Endereço: ${company.endereco}`, 14, 68);
+    
+    doc.text(`Nome: ${mirror.employee.name}`, 148.5, 58);
+    doc.text(`CPF: ${mirror.employee.cpf || '-'}`, 148.5, 63);
+    doc.text(`PIS/PASEP: ${mirror.employee.pis || '-'}`, 220, 63);
+    doc.text(`Período: ${format(new Date(mirror.period + "-01T00:00:00"), "MMMM 'de' yyyy", { locale: ptBR })}`, 220, 68);
+
+    autoTable(doc, {
+      startY: 75,
+      head: [['Data', 'Ent 1', 'Sai 1', 'Ent 2', 'Sai 2', 'Ent 3', 'Sai 3', 'Total', 'Saldo', 'Justificativa']],
+      body: mirror.records.map(r => [
+        format(new Date(r.date + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR }),
+        r.isDayOff ? (r.holidayDescription || "FOLGA") : r.punches[0]?.timestamp ? format(new Date(r.punches[0].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[1]?.timestamp ? format(new Date(r.punches[1].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[2]?.timestamp ? format(new Date(r.punches[2].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[3]?.timestamp ? format(new Date(r.punches[3].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[4]?.timestamp ? format(new Date(r.punches[4].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[5]?.timestamp ? format(new Date(r.punches[5].timestamp), "HH:mm") : "-",
+        r.totalHours,
+        r.balance,
+        r.punches.map(p => p.justification).filter(Boolean).join("; ")
+      ]),
+      theme: 'grid',
+      headStyles: { fillColor: [51, 51, 51], textColor: [255, 255, 255], fontSize: 8, halign: 'center' },
+      styles: { fontSize: 8 },
+    });
+
+    doc.save(`espelho_ponto_${mirror.employee.name.replace(/\s+/g, '_')}_${mirror.period}.pdf`);
+  };
 
   const clockInMutation = useMutation({
     mutationFn: async () => {
@@ -91,9 +158,13 @@ export default function EmployeeDashboard() {
             <span className="font-display font-bold text-lg hidden sm:inline-block">Ponto Digital</span>
           </div>
           <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={!mirror}>
+              <Printer className="w-4 h-4 mr-2" />
+              Espelho PDF
+            </Button>
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium">{user?.name}</p>
-              <p className="text-xs text-muted-foreground">{user?.cargo}</p>
+              <p className="text-xs text-muted-foreground">{user?.cargo?.name || "Funcionário"}</p>
             </div>
             <Button variant="ghost" size="icon" onClick={() => logoutMutation.mutate()}>
               <LogOut className="w-5 h-5" />

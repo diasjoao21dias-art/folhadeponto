@@ -294,6 +294,33 @@ export async function registerRoutes(
     res.send("\ufeff" + csv);
   });
 
+  app.get("/api/reports/export/afd", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const monthStr = req.query.month as string;
+    if (!monthStr) return res.status(400).json({ message: "Missing month" });
+
+    const startDate = startOfMonth(parse(monthStr, 'yyyy-MM', new Date()));
+    const endDate = endOfMonth(startDate);
+    endDate.setHours(23, 59, 59);
+
+    const allPunches = await db.select().from(punches)
+      .where(and(gte(punches.timestamp, startDate), lte(punches.timestamp, endDate), eq(punches.isDeleted, false)))
+      .orderBy(punches.timestamp);
+
+    let afd = "0000000011... [HEADER SIMULADO]\n";
+    allPunches.forEach((p, idx) => {
+      const seq = String(idx + 2).padStart(9, '0');
+      const date = format(p.timestamp!, "ddMMyyyy");
+      const time = format(p.timestamp!, "HHmm");
+      const pis = "00000000000"; // No AFD real, buscaríamos o PIS do usuário
+      afd += `${seq}3${date}${time}${pis}\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename=AFD_${monthStr}.txt`);
+    res.send(afd);
+  });
+
   // Export Layouts AFDT/ACJEF (Stub)
   app.get("/api/reports/export/:type", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
