@@ -4,7 +4,7 @@ import {
   type User, type InsertUser, type CompanySettings, type InsertCompanySettings,
   type AfdFile, type Punch, type AuditLog, type Cargo, type InsertCargo
 } from "@shared/schema";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -205,6 +205,20 @@ export class DatabaseStorage implements IStorage {
   async updateAdjustment(id: number, data: any): Promise<any> {
     const [updated] = await db.update(punchAdjustments).set(data).where(eq(punchAdjustments.id, id)).returning();
     return updated;
+  }
+  async getHolidays(): Promise<any[]> {
+    return await db.select().from(holidays).orderBy(holidays.date);
+  }
+  async createHoliday(holiday: any): Promise<any> {
+    const [result] = await db.insert(holidays).values(holiday).returning();
+    return result;
+  }
+  async deleteHoliday(id: number): Promise<void> {
+    await db.delete(holidays).where(eq(holidays.id, id));
+  }
+  async createAdjustment(adj: any): Promise<any> {
+    const [result] = await db.insert(punchAdjustments).values(adj).returning();
+    return result;
   }
 }
 
