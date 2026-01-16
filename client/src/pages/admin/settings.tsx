@@ -113,14 +113,32 @@ export default function SettingsPage() {
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Validade do Banco (Meses)</Label>
-                      <Input 
-                        type="number"
-                        {...form.register("bankExpirationMonths", { valueAsNumber: true })}
-                        placeholder="Ex: 6"
-                      />
-                      <p className="text-xs text-muted-foreground">Período para compensação das horas antes do pagamento.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Tolerância Diária (Minutos)</Label>
+                        <Input 
+                          type="number"
+                          {...form.register("tolerance", { valueAsNumber: true })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Validade do Banco (Meses)</Label>
+                        <Input 
+                          type="number"
+                          {...form.register("bankExpirationMonths", { valueAsNumber: true })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-2">
+                        <Label>Início Hora Noturna</Label>
+                        <Input {...form.register("nightShiftStart")} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Fim Hora Noturna</Label>
+                        <Input {...form.register("nightShiftEnd")} />
+                      </div>
                     </div>
                   </div>
 

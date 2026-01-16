@@ -25,8 +25,13 @@ export const companySettings = pgTable("company_settings", {
   razaoSocial: text("razao_social").notNull(),
   cnpj: text("cnpj").notNull(),
   endereco: text("endereco").notNull(),
-  overtimeRule: text("overtime_rule").default("bank"), // 'bank' | 'pay'
+  overtimeRule: text("overtime_rule").default("bank"), // 'bank' | 'pay' | 'mixed'
   bankExpirationMonths: integer("bank_expiration_months").default(6),
+  tolerance: integer("tolerance").default(10), // Total tolerance per day in minutes (CLT: 10 min)
+  nightShiftStart: text("night_shift_start").default("22:00"),
+  nightShiftEnd: text("night_shift_end").default("05:00"),
+  nightShiftBonus: integer("night_shift_bonus").default(20), // 20% by default
+  dsrRule: text("dsr_rule").default("standard"), // 'standard' | 'none'
 });
 
 export const holidays = pgTable("holidays", {
