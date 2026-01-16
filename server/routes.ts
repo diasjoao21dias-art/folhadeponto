@@ -6,7 +6,12 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import multer from "multer";
 import { format, parse, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, differenceInMinutes, parseISO } from "date-fns";
-import { DailyRecord, type User } from "@shared/schema";
+import { db } from "./db";
+import {
+  users, companySettings, afdFiles, punches, auditLogs, holidays, punchAdjustments, cargos,
+  type User, type InsertUser, type CompanySettings, type InsertCompanySettings,
+  type AfdFile, type Punch, type AuditLog, type Cargo, type InsertCargo, DailyRecord
+} from "@shared/schema";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
