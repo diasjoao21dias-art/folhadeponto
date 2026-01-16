@@ -82,11 +82,18 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   async updateUser(id: number, updateUser: Partial<InsertUser>): Promise<User> {
-    const [user] = await db.update(users).set(updateUser).where(eq(users.id, id)).returning();
+    const updateData = { ...updateUser };
+    if (updateData.active === false && !updateData.inactivatedAt) {
+      updateData.inactivatedAt = new Date();
+    } else if (updateData.active === true) {
+      updateData.inactivatedAt = null;
+    }
+    const [user] = await db.update(users).set(updateData).where(eq(users.id, id)).returning();
     return user;
   }
   async deleteUser(id: number): Promise<void> {
-    await db.delete(users).where(eq(users.id, id));
+    // Portaria 671 compliance: Soft delete by default
+    await db.update(users).set({ active: false, inactivatedAt: new Date() }).where(eq(users.id, id));
   }
   async getCompanySettings(): Promise<CompanySettings | undefined> {
     const [settings] = await db.select().from(companySettings).limit(1);
