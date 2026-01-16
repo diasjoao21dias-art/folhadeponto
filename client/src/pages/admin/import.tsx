@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UploadCloud, FileText, CheckCircle2, Loader2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { format } from "date-fns";
@@ -37,39 +38,65 @@ export default function ImportPage() {
           </div>
 
           <div className="grid gap-8 lg:grid-cols-3">
-            <Card className="lg:col-span-1 dashboard-card h-fit">
-              <CardHeader>
-                <CardTitle>Upload de Arquivo</CardTitle>
-                <CardDescription>Suporta arquivos .txt padrão AFD</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div
-                  {...getRootProps()}
-                  className={`
-                    border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300
-                    flex flex-col items-center justify-center gap-4
-                    ${isDragActive ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border hover:border-primary/50 hover:bg-muted/30'}
-                  `}
-                >
-                  <input {...getInputProps()} />
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${uploadMutation.isPending ? 'bg-muted' : 'bg-primary/10'}`}>
-                    {uploadMutation.isPending ? (
-                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                    ) : (
-                      <UploadCloud className="w-8 h-8 text-primary" />
-                    )}
+            <div className="lg:col-span-1 space-y-8">
+              <Card className="dashboard-card h-fit">
+                <CardHeader>
+                  <CardTitle>Exportar AFD</CardTitle>
+                  <CardDescription>Gerar arquivo AFD (Portaria 671)</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-col gap-3">
+                    <Label htmlFor="afd-month">Mês de Referência</Label>
+                    <input 
+                      type="month" 
+                      id="afd-month"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" 
+                      defaultValue={format(new Date(), "yyyy-MM")}
+                    />
+                    <Button className="w-full" onClick={() => {
+                      const month = (document.getElementById('afd-month') as HTMLInputElement).value;
+                      window.open(`/api/reports/export/afd?month=${month}`);
+                    }}>
+                      Baixar AFD (.txt)
+                    </Button>
                   </div>
-                  <div>
-                    <p className="font-medium">
-                      {isDragActive ? "Solte o arquivo aqui" : "Clique ou arraste o arquivo"}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Máximo 10MB
-                    </p>
+                </CardContent>
+              </Card>
+
+              <Card className="dashboard-card h-fit">
+                <CardHeader>
+                  <CardTitle>Upload de Arquivo</CardTitle>
+                  <CardDescription>Suporta arquivos .txt padrão AFD</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    {...getRootProps()}
+                    className={`
+                      border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300
+                      flex flex-col items-center justify-center gap-4
+                      ${isDragActive ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border hover:border-primary/50 hover:bg-muted/30'}
+                    `}
+                  >
+                    <input {...getInputProps()} />
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${uploadMutation.isPending ? 'bg-muted' : 'bg-primary/10'}`}>
+                      {uploadMutation.isPending ? (
+                        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                      ) : (
+                        <UploadCloud className="w-8 h-8 text-primary" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium">
+                        {isDragActive ? "Solte o arquivo aqui" : "Clique ou arraste o arquivo"}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Máximo 10MB
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
             <Card className="lg:col-span-2 dashboard-card">
               <CardHeader>

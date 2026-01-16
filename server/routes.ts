@@ -10,8 +10,9 @@ import { db } from "./db";
 import {
   users, companySettings, afdFiles, punches, auditLogs, holidays, punchAdjustments, cargos,
   type User, type InsertUser, type CompanySettings, type InsertCompanySettings,
-  type AfdFile, type Punch, type AuditLog, type Cargo, type InsertCargo, DailyRecord
+  type AfdFile, type Punch, type AuditLog, type Cargo, type InsertCargo
 } from "@shared/schema";
+import { DailyRecord } from "@shared/schema";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
