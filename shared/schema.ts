@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   cpf: text("cpf"),
   pis: text("pis"), // Essential for AFD linking
   active: boolean("active").default(true),
+  inactivatedAt: timestamp("inactivated_at"),
   cargoId: integer("cargo_id").references(() => cargos.id),
   scheduleType: text("schedule_type").default("5x2"), // '5x2', '6x1', '12x36', 'flex'
   workSchedule: text("work_schedule").default("08:00-12:00,13:00-17:00"),
@@ -27,8 +28,8 @@ export const cargos = pgTable("cargos", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   nightBonus: integer("night_bonus").default(20),
-  nightStart: text("night_start").default("22:00"),
-  nightEnd: text("night_end").default("05:00"),
+  nightStart: text("night_start").default("22:00"), // Time in HH:mm
+  nightEnd: text("night_end").default("05:00"), // Time in HH:mm
   applyNightExtension: boolean("apply_night_extension").default(true),
 });
 
@@ -171,11 +172,15 @@ export interface DailyRecord {
   date: string; // YYYY-MM-DD
   punches: Punch[]; // Array of punch objects
   totalHours: string; // HH:mm
+  totalMinutes: number; // For calculations/ERP
+  totalDecimal: number; // For calculations/ERP
   balance: string; // HH:mm (positive or negative)
+  balanceMinutes: number;
   isDayOff: boolean;
   holidayDescription?: string;
   isAbonado?: boolean;
   nightHours?: string;
+  nightMinutes?: number;
   isInconsistent?: boolean;
   lunchViolation?: boolean;
 }
@@ -187,12 +192,17 @@ export interface MonthlyMirrorResponse {
   records: DailyRecord[];
   summary: {
     totalHours: string;
+    totalMinutes: number;
     totalOvertime: string;
+    totalOvertimeMinutes: number;
     totalNegative: string;
+    totalNegativeMinutes: number;
     finalBalance: string;
+    finalBalanceMinutes: number;
     dsrValue?: string;
     dsrExplanation?: string;
     nightHours?: string;
+    nightMinutes?: number;
   };
 }
 
