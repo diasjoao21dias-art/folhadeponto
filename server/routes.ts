@@ -588,8 +588,8 @@ export async function registerRoutes(
 
   app.get("/api/holidays", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
-    const holidays = await storage.getHolidays();
-    res.json(holidays);
+    const holidaysData = await storage.getHolidays();
+    res.json(holidaysData);
   });
 
   app.post("/api/holidays", async (req, res) => {
@@ -610,13 +610,13 @@ export async function registerRoutes(
     const user = req.user as User;
     if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
     const holidayId = Number(req.params.id);
-    const holiday = await db.select().from(holidays).where(eq(holidays.id, holidayId)).limit(1);
+    const holidayItem = await db.select().from(holidays).where(eq(holidays.id, holidayId)).limit(1);
     await storage.deleteHoliday(holidayId);
-    if (holiday.length > 0) {
+    if (holidayItem.length > 0) {
       await storage.createAuditLog({
         adminId: user.id,
         action: 'DELETE_HOLIDAY',
-        details: `Removido feriado: ${holiday[0].description} de ${holiday[0].date}`,
+        details: `Removido feriado: ${holidayItem[0].description} de ${holidayItem[0].date}`,
         ipAddress: req.ip,
         userAgent: req.get('user-agent')
       });
