@@ -310,12 +310,12 @@ export default function TimesheetPage() {
                 </Card>
                 <Card className="p-4">
                   <p className="text-xs text-muted-foreground uppercase font-semibold">Reflexo DSR</p>
-                  <p className="text-2xl font-bold text-blue-600">{mirror.summary.dsrValue}</p>
-                  <p className="text-[10px] text-muted-foreground leading-tight">{mirror.summary.dsrExplanation}</p>
+                  <p className="text-2xl font-bold text-blue-600">{mirror.summary.dsrValue || "00:00"}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{mirror.summary.dsrExplanation || ""}</p>
                 </Card>
                 <Card className="p-4">
                   <p className="text-xs text-muted-foreground uppercase font-semibold">Adic. Noturno</p>
-                  <p className="text-2xl font-bold text-purple-600">{mirror.summary.nightHours}</p>
+                  <p className="text-2xl font-bold text-purple-600">{mirror.summary.nightHours || "00:00"}</p>
                 </Card>
               </div>
 

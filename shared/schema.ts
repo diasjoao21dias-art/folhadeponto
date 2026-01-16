@@ -175,6 +175,7 @@ export interface DailyRecord {
   isDayOff: boolean;
   holidayDescription?: string;
   isAbonado?: boolean;
+  nightHours?: string;
 }
 
 export interface MonthlyMirrorResponse {
@@ -187,6 +188,9 @@ export interface MonthlyMirrorResponse {
     totalOvertime: string;
     totalNegative: string;
     finalBalance: string;
+    dsrValue?: string;
+    dsrExplanation?: string;
+    nightHours?: string;
   };
 }
 
