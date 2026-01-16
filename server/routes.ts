@@ -31,9 +31,18 @@ export async function registerRoutes(
 
   app.post(api.users.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
+    const admin = req.user as User;
     try {
       const input = api.users.create.input.parse(req.body);
       const user = await storage.createUser(input);
+      await storage.createAuditLog({
+        adminId: admin.id,
+        targetUserId: user.id,
+        action: 'CREATE_USER',
+        details: `Criado usuário ${user.username} (${user.name}).`,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent')
+      });
       res.status(201).json(user);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -45,9 +54,18 @@ export async function registerRoutes(
 
   app.put(api.users.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
+    const admin = req.user as User;
     try {
       const input = api.users.update.input.parse(req.body);
       const user = await storage.updateUser(Number(req.params.id), input);
+      await storage.createAuditLog({
+        adminId: admin.id,
+        targetUserId: user.id,
+        action: 'UPDATE_USER',
+        details: `Atualizado usuário ${user.username} (${user.name}). Ativo: ${user.active}`,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent')
+      });
       res.json(user);
     } catch (err) {
       res.status(400).json({ message: "Invalid request" });
@@ -56,7 +74,17 @@ export async function registerRoutes(
 
   app.delete(api.users.delete.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
-    await storage.deleteUser(Number(req.params.id));
+    const admin = req.user as User;
+    const targetId = Number(req.params.id);
+    await storage.deleteUser(targetId);
+    await storage.createAuditLog({
+      adminId: admin.id,
+      targetUserId: targetId,
+      action: 'DELETE_USER',
+      details: `Usuário ID ${targetId} inativado (soft delete).`,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    });
     res.status(204).send();
   });
 
@@ -68,9 +96,17 @@ export async function registerRoutes(
 
   app.post(api.company.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
+    const admin = req.user as User;
     try {
       const input = api.company.update.input.parse(req.body);
       const settings = await storage.updateCompanySettings(input);
+      await storage.createAuditLog({
+        adminId: admin.id,
+        action: 'UPDATE_COMPANY',
+        details: `Atualizadas configurações da empresa: ${settings.razaoSocial}`,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent')
+      });
       res.json(settings);
     } catch (err) {
       res.status(400).json({ message: "Invalid request" });
@@ -85,6 +121,7 @@ export async function registerRoutes(
 
   app.post(api.afd.upload.path, upload.single('file'), async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
+    const admin = req.user as User;
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
     try {
       const fileContent = req.file.buffer.toString('utf-8');
@@ -118,6 +155,13 @@ export async function registerRoutes(
         }
       }
       await storage.createPunches(newPunches);
+      await storage.createAuditLog({
+        adminId: admin.id,
+        action: 'UPLOAD_AFD',
+        details: `Importado arquivo AFD: ${req.file.originalname}. ${processedCount} registros processados.`,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent')
+      });
       res.json({ message: "File processed successfully", processedCount });
     } catch (err) {
       res.status(500).json({ message: "Error processing AFD file" });
@@ -459,6 +503,16 @@ export async function registerRoutes(
       source: 'MANUAL',
       justification: 'Marcação via sistema (Web)' 
     }]);
+
+    await storage.createAuditLog({
+      adminId: user.id,
+      targetUserId: user.id,
+      action: 'CLOCK_IN',
+      details: `Registro de ponto via web às ${format(now, "HH:mm:ss")}.`,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    });
+
     res.status(201).json({ message: "Ponto registrado com sucesso", timestamp: now });
   });
 
@@ -476,6 +530,14 @@ export async function registerRoutes(
       ...req.body,
       userId: user.id,
       timestamp: req.body.timestamp ? new Date(req.body.timestamp) : null,
+    });
+    await storage.createAuditLog({
+      adminId: user.id,
+      targetUserId: user.id,
+      action: 'CREATE_ADJUSTMENT',
+      details: `Solicitado ajuste de ponto: ${req.body.justification}`,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
     });
     res.status(201).json(adj);
   });

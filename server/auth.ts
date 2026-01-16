@@ -45,11 +45,31 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/auth/login", passport.authenticate("local"), (req, res) => {
+  app.post("/api/auth/login", passport.authenticate("local"), async (req, res) => {
+    const user = req.user as User;
+    await storage.createAuditLog({
+      adminId: user.id,
+      targetUserId: user.id,
+      action: 'LOGIN',
+      details: `Usuário ${user.username} realizou login no sistema.`,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    });
     res.json(req.user);
   });
 
-  app.post("/api/auth/logout", (req, res, next) => {
+  app.post("/api/auth/logout", async (req, res, next) => {
+    const user = req.user as User;
+    if (user) {
+      await storage.createAuditLog({
+        adminId: user.id,
+        targetUserId: user.id,
+        action: 'LOGOUT',
+        details: `Usuário ${user.username} realizou logout do sistema.`,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent')
+      });
+    }
     req.logout((err) => {
       if (err) return next(err);
       res.json({ message: "Logged out successfully" });
