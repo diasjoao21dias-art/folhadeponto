@@ -145,39 +145,39 @@ export default function TimesheetPage() {
     doc.text(`PIS/PASEP: ${mirror.employee.pis || '-'}`, 220, 63);
     doc.text(`Período: ${format(new Date(mirror.period + "-01T00:00:00"), "MMMM 'de' yyyy", { locale: ptBR })}`, 220, 68);
 
-    const tableBody = mirror.records.map(r => [
-      format(new Date(r.date + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR }),
-      r.isDayOff ? (r.holidayDescription || "FOLGA") : r.punches[0]?.timestamp ? format(new Date(r.punches[0].timestamp), "HH:mm") : "-",
-      r.isDayOff ? "" : r.punches[1]?.timestamp ? format(new Date(r.punches[1].timestamp), "HH:mm") : "-",
-      r.isDayOff ? "" : r.punches[2]?.timestamp ? format(new Date(r.punches[2].timestamp), "HH:mm") : "-",
-      r.isDayOff ? "" : r.punches[3]?.timestamp ? format(new Date(r.punches[3].timestamp), "HH:mm") : "-",
-      r.isDayOff ? "" : r.punches[4]?.timestamp ? format(new Date(r.punches[4].timestamp), "HH:mm") : "-",
-      r.isDayOff ? "" : r.punches[5]?.timestamp ? format(new Date(r.punches[5].timestamp), "HH:mm") : "-",
-      r.totalHours,
-      r.balance
-    ]);
-
     autoTable(doc, {
       startY: 75,
-      head: [['Data', 'Ent 1', 'Sai 1', 'Ent 2', 'Sai 2', 'Ent 3', 'Sai 3', 'Total', 'Saldo']],
-      body: tableBody,
+      head: [['Data', 'Ent 1', 'Sai 1', 'Ent 2', 'Sai 2', 'Ent 3', 'Sai 3', 'Total', 'Saldo', 'Justificativa']],
+      body: mirror.records.map(r => [
+        format(new Date(r.date + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR }),
+        r.isDayOff ? (r.holidayDescription || "FOLGA") : r.punches[0]?.timestamp ? format(new Date(r.punches[0].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[1]?.timestamp ? format(new Date(r.punches[1].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[2]?.timestamp ? format(new Date(r.punches[2].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[3]?.timestamp ? format(new Date(r.punches[3].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[4]?.timestamp ? format(new Date(r.punches[4].timestamp), "HH:mm") : "-",
+        r.isDayOff ? "" : r.punches[5]?.timestamp ? format(new Date(r.punches[5].timestamp), "HH:mm") : "-",
+        r.totalHours,
+        r.balance,
+        r.punches.map(p => p.justification).filter(Boolean).join("; ")
+      ]),
       theme: 'grid',
       headStyles: { 
         fillColor: [51, 51, 51], 
         textColor: [255, 255, 255],
-        fontSize: 9,
+        fontSize: 8,
         halign: 'center'
       },
       columnStyles: {
-        0: { cellWidth: 35 },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' },
-        6: { halign: 'center' },
-        7: { halign: 'right', fontStyle: 'bold' },
-        8: { halign: 'right', fontStyle: 'bold' }
+        0: { cellWidth: 30 },
+        1: { halign: 'center', cellWidth: 15 },
+        2: { halign: 'center', cellWidth: 15 },
+        3: { halign: 'center', cellWidth: 15 },
+        4: { halign: 'center', cellWidth: 15 },
+        5: { halign: 'center', cellWidth: 15 },
+        6: { halign: 'center', cellWidth: 15 },
+        7: { halign: 'right', fontStyle: 'bold', cellWidth: 15 },
+        8: { halign: 'right', fontStyle: 'bold', cellWidth: 15 },
+        9: { cellWidth: 'auto' }
       },
       styles: { fontSize: 8 },
       didParseCell: (data) => {
@@ -264,6 +264,7 @@ export default function TimesheetPage() {
                       <TableHead className="text-right">Horas Normais</TableHead>
                       <TableHead className="text-right">Adic. Noturno</TableHead>
                       <TableHead className="text-right">Saldo</TableHead>
+                      <TableHead>Justificativa</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -289,6 +290,9 @@ export default function TimesheetPage() {
                         <TableCell className="text-right font-mono">{record.isAbonado ? "ABONADO" : record.totalHours}</TableCell>
                         <TableCell className="text-right font-mono">{(record as any).nightHours || "00:00"}</TableCell>
                         <TableCell className={`text-right font-mono ${record.balance.startsWith("-") ? "text-red-500" : "text-green-600"}`}>{record.balance}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                          {record.punches.map(p => p.justification).filter(Boolean).join("; ")}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
