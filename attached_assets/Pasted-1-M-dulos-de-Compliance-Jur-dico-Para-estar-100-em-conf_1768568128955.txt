@@ -1,0 +1,31 @@
+1. Módulos de Compliance (Jurídico)
+Para estar 100% em conformidade com a fiscalização do Ministério do Trabalho, você precisa implementar:
+
+Geração de Arquivo AEJP: Além de ler o AFD, o sistema deve ser capaz de gerar o Arquivo Eletrônico de Jornada Pessoal (AEJP). É esse arquivo que o fiscal do trabalho pede em uma auditoria.
+
+Assinatura Digital do Espelho: Adicione uma funcionalidade para que o colaborador assine o espelho de ponto mensalmente usando um certificado digital ou uma assinatura eletrônica simples (com log de IP e data). Isso substitui o papel assinado.
+
+Comprovante de Registro de Ponto (comprovante do trabalhador): Se o sistema permitir batida via web/app, ele deve emitir um comprovante digital para o funcionário a cada marcação.
+
+2. Inteligência no Motor de Cálculo
+O "pulo do gato" de um sistema de gestão de folha é lidar com as exceções:
+
+Redução da Hora Noturna: No Brasil, a hora noturna não tem 60 minutos, mas sim 52 minutos e 30 segundos. Seu motor de cálculo já faz essa conversão automática ou apenas aplica o adicional de 20%?
+
+Interjornada e Intrajornada: O sistema deve emitir um alerta se o funcionário não cumpriu as 11 horas de descanso entre um dia e outro (interjornada) ou se não tirou o mínimo de 1h de almoço.
+
+DSR sobre Horas Extras: Lembre-se que as horas extras e o adicional noturno também geram reflexo no cálculo do DSR.
+
+3. Gestão Avançada de Escalas
+As jornadas 5x2 e 6x1 são simples, mas o sistema precisa prever:
+
+Troca de Turno: Funcionalidade para o gestor mudar o horário de um funcionário temporariamente sem perder o histórico anterior.
+
+Feriados Inteligentes: Uma tabela onde se cadastra feriados nacionais, estaduais e municipais. O sistema deve saber que uma batida no feriado conta como 100% (ou conforme convenção coletiva).
+
+Escalas de Revezamento: Permitir configurar folgas que caem em dias diferentes a cada semana.
+
+4. Segurança e Prevenção de Fraudes
+Cerca Eletrônica (Geofencing): Para funcionários que batem ponto pelo celular, restringir a batida apenas se eles estiverem dentro de um raio X do endereço da empresa ou do cliente.
+
+Trilha de Auditoria Pública: Uma tela onde qualquer alteração manual (feita pelo Admin) mostre claramente: Horário Original | Horário Ajustado | Motivo | Quem alterou.

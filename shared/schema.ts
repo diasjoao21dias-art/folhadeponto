@@ -17,6 +17,9 @@ export const users = pgTable("users", {
   cargo: text("cargo"),
   scheduleType: text("schedule_type").default("5x2"), // '5x2', '6x1', '12x36', 'flex'
   workSchedule: text("work_schedule").default("08:00-12:00,13:00-17:00"),
+  allowedLat: text("allowed_lat"), // Geofencing
+  allowedLng: text("allowed_lng"), // Geofencing
+  allowedRadius: integer("allowed_radius").default(200), // In meters
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -72,6 +75,10 @@ export const punches = pgTable("punches", {
   adjustmentId: integer("adjustment_id").references(() => punchAdjustments.id),
   isDeleted: boolean("is_deleted").default(false), // Portaria 671: No physical deletion
   originalTimestamp: timestamp("original_timestamp"), // Keep record of what it was before edit
+  latitude: text("latitude"),
+  longitude: text("longitude"),
+  ipAddress: text("ip_address"),
+  signature: text("signature"), // Digital signature for the punch itself (receipt)
 });
 
 export const auditLogs = pgTable("audit_logs", {
