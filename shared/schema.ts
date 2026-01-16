@@ -70,6 +70,8 @@ export const punches = pgTable("punches", {
   source: text("source").default("AFD"), // 'AFD' | 'MANUAL' | 'EDITED' | 'WEB'
   justification: text("justification"),
   adjustmentId: integer("adjustment_id").references(() => punchAdjustments.id),
+  isDeleted: boolean("is_deleted").default(false), // Portaria 671: No physical deletion
+  originalTimestamp: timestamp("original_timestamp"), // Keep record of what it was before edit
 });
 
 export const auditLogs = pgTable("audit_logs", {
@@ -78,6 +80,8 @@ export const auditLogs = pgTable("audit_logs", {
   targetUserId: integer("target_user_id").references(() => users.id),
   action: text("action").notNull(), // 'CREATE_PUNCH', 'UPDATE_PUNCH', 'DELETE_PUNCH'
   details: text("details").notNull(),
+  ipAddress: text("ip_address"), // LGPD/Compliance
+  userAgent: text("user_agent"), // LGPD/Compliance
   timestamp: timestamp("timestamp").defaultNow(),
 });
 

@@ -82,18 +82,24 @@ export class DatabaseStorage implements IStorage {
     await db.insert(punches).values(newPunches as any);
   }
   async getPunchesByPeriod(userId: number, start: Date, end: Date): Promise<Punch[]> {
-    return await db.select().from(punches).where(and(eq(punches.userId, userId), gte(punches.timestamp, start), lte(punches.timestamp, end))).orderBy(punches.timestamp);
+    return await db.select().from(punches).where(and(eq(punches.userId, userId), gte(punches.timestamp, start), lte(punches.timestamp, end), eq(punches.isDeleted, false))).orderBy(punches.timestamp);
   }
   async getPunch(id: number): Promise<Punch | undefined> {
-    const [punch] = await db.select().from(punches).where(eq(punches.id, id));
+    const [punch] = await db.select().from(punches).where(and(eq(punches.id, id), eq(punches.isDeleted, false)));
     return punch;
   }
   async updatePunch(id: number, punch: Partial<Punch>): Promise<Punch> {
-    const [updated] = await db.update(punches).set(punch).where(eq(punches.id, id)).returning();
+    const existing = await this.getPunch(id);
+    const updateData = { ...punch };
+    if (existing && !existing.originalTimestamp) {
+      updateData.originalTimestamp = existing.timestamp;
+    }
+    const [updated] = await db.update(punches).set(updateData).where(eq(punches.id, id)).returning();
     return updated;
   }
   async deletePunch(id: number): Promise<void> {
-    await db.delete(punches).where(eq(punches.id, id));
+    // Portaria 671 compliance: Soft delete only
+    await db.update(punches).set({ isDeleted: true }).where(eq(punches.id, id));
   }
   async createAuditLog(log: any): Promise<AuditLog> {
     const [entry] = await db.insert(auditLogs).values(log).returning();
