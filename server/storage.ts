@@ -1,10 +1,10 @@
 import { db } from "./db";
-import {
-  users, companySettings, afdFiles, punches, auditLogs, holidays, punchAdjustments, cargos,
+import { users, companySettings, afdFiles, punches, auditLogs, holidays, punchAdjustments, cargos,
   type User, type InsertUser, type CompanySettings, type InsertCompanySettings,
   type AfdFile, type Punch, type AuditLog, type Cargo, type InsertCargo
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -145,6 +145,7 @@ export class DatabaseStorage implements IStorage {
     return entry;
   }
   async getAuditLogs(): Promise<any[]> {
+    const targetUsers = alias(users, "target_users");
     const logs = await db
       .select({
         id: auditLogs.id,
@@ -156,11 +157,11 @@ export class DatabaseStorage implements IStorage {
         userAgent: auditLogs.userAgent,
         timestamp: auditLogs.timestamp,
         adminName: users.name,
-        targetName: sql<string>`target_users.name`,
+        targetName: targetUsers.name,
       })
       .from(auditLogs)
       .leftJoin(users, eq(auditLogs.adminId, users.id))
-      .leftJoin(sql`${users} as target_users`, eq(auditLogs.targetUserId, sql`target_users.id`))
+      .leftJoin(targetUsers, eq(auditLogs.targetUserId, targetUsers.id))
       .orderBy(desc(auditLogs.timestamp));
 
     return logs.map(log => ({

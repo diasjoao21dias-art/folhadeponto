@@ -573,7 +573,9 @@ export async function registerRoutes(
       adminId: user.id,
       targetUserId: adj.userId,
       action: 'PROCESS_ADJUSTMENT',
-      details: `${status === 'approved' ? 'Aprovado' : 'Rejeitado'} ajuste ID ${id}. Feedback: ${feedback || '-'}`
+      details: `${status === 'approved' ? 'Aprovado' : 'Rejeitado'} ajuste ID ${id}. Feedback: ${feedback || '-'}`,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
     });
 
     res.json(updated);
