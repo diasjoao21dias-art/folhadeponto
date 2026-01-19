@@ -61,14 +61,18 @@ export function setupAuth(app: Express) {
   app.post("/api/auth/logout", async (req, res, next) => {
     const user = req.user as User;
     if (user) {
-      await storage.createAuditLog({
-        adminId: user.id,
-        targetUserId: user.id,
-        action: 'LOGOUT',
-        details: `Usuário ${user.username} realizou logout do sistema.`,
-        ipAddress: req.ip,
-        userAgent: req.get('user-agent')
-      });
+      try {
+        await storage.createAuditLog({
+          adminId: user.id,
+          targetUserId: user.id,
+          action: 'LOGOUT',
+          details: `Usuário ${user.username} realizou logout do sistema.`,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent')
+        });
+      } catch (err) {
+        console.error("Erro ao criar log de logout:", err);
+      }
     }
     req.logout((err) => {
       if (err) return next(err);

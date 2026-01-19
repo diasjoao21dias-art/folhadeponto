@@ -612,8 +612,12 @@ export async function registerRoutes(
     const user = req.user as User;
     if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
     const holidayId = Number(req.params.id);
+    
+    // Busca o item ANTES de deletar para ter os detalhes no log
     const holidayItem = await db.select().from(holidays).where(eq(holidays.id, holidayId)).limit(1);
+    
     await storage.deleteHoliday(holidayId);
+    
     if (holidayItem.length > 0) {
       await storage.createAuditLog({
         adminId: user.id,
