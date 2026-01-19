@@ -584,7 +584,10 @@ export async function registerRoutes(
   app.get(api.audit.list.path, async (req, res) => {
     const user = req.user as User;
     if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
+    
+    // Invalidate cache by forcing a fresh fetch from DB and potentially clearing any app-level cache
     const logs = await storage.getAuditLogs();
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.json(logs);
   });
 

@@ -6,8 +6,10 @@ import { ptBR } from "date-fns/locale";
 import { Loader2 } from "lucide-react";
 
 export default function AuditPage() {
-  const { data: logs, isLoading, error } = useQuery<any[]>({
+  const { data: logs, isLoading, error, refetch } = useQuery<any[]>({
     queryKey: ["/api/audit"],
+    staleTime: 0, // Ensure it's always considered stale
+    refetchOnWindowFocus: true
   });
 
   const formatDate = (dateString: string) => {
