@@ -1,40 +1,40 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, integer, serial, boolean, timestamp } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // === TABLE DEFINITIONS ===
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("employee"), // 'admin' | 'employee'
   name: text("name").notNull(),
   cpf: text("cpf"),
   pis: text("pis"), // Essential for AFD linking
-  active: boolean("active").default(true),
-  inactivatedAt: timestamp("inactivated_at"),
+  active: integer("active", { mode: "boolean" }).default(true),
+  inactivatedAt: integer("inactivated_at", { mode: "timestamp" }),
   cargoId: integer("cargo_id").references(() => cargos.id),
   scheduleType: text("schedule_type").default("5x2"), // '5x2', '6x1', '12x36', 'flex'
   workSchedule: text("work_schedule").default("08:00-12:00,13:00-17:00"),
   allowedLat: text("allowed_lat"), // Geofencing
   allowedLng: text("allowed_lng"), // Geofencing
   allowedRadius: integer("allowed_radius").default(200), // In meters
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now') * 1000)`),
 });
 
-export const cargos = pgTable("cargos", {
-  id: serial("id").primaryKey(),
+export const cargos = sqliteTable("cargos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   nightBonus: integer("night_bonus").default(20),
   nightStart: text("night_start").default("22:00"), // Time in HH:mm
   nightEnd: text("night_end").default("05:00"), // Time in HH:mm
-  applyNightExtension: boolean("apply_night_extension").default(true),
+  applyNightExtension: integer("apply_night_extension", { mode: "boolean" }).default(true),
 });
 
-export const companySettings = pgTable("company_settings", {
-  id: serial("id").primaryKey(),
+export const companySettings = sqliteTable("company_settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   razaoSocial: text("razao_social").notNull(),
   cnpj: text("cnpj").notNull(),
   endereco: text("endereco").notNull(),
@@ -47,60 +47,60 @@ export const companySettings = pgTable("company_settings", {
   dsrRule: text("dsr_rule").default("standard"), // 'standard' | 'none'
 });
 
-export const holidays = pgTable("holidays", {
-  id: serial("id").primaryKey(),
+export const holidays = sqliteTable("holidays", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   date: text("date").notNull(), // YYYY-MM-DD
   description: text("description").notNull(),
 });
 
-export const afdFiles = pgTable("afd_files", {
-  id: serial("id").primaryKey(),
+export const afdFiles = sqliteTable("afd_files", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   filename: text("filename").notNull(),
-  uploadedAt: timestamp("uploaded_at").defaultNow(),
-  processed: boolean("processed").default(false),
+  uploadedAt: integer("uploaded_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now') * 1000)`),
+  processed: integer("processed", { mode: "boolean" }).default(false),
   recordCount: integer("record_count").default(0),
 });
 
-export const punchAdjustments = pgTable("punch_adjustments", {
-  id: serial("id").primaryKey(),
+export const punchAdjustments = sqliteTable("punch_adjustments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").references(() => users.id).notNull(),
   type: text("type").notNull(), // 'MISSING_PUNCH', 'MEDICAL_CERTIFICATE', 'ADJUSTMENT', 'ABSENCE_ABONADO'
-  timestamp: timestamp("timestamp"),
-  endDate: timestamp("end_date"), // For multi-day medical certificates
+  timestamp: integer("timestamp", { mode: "timestamp" }),
+  endDate: integer("end_date", { mode: "timestamp" }), // For multi-day medical certificates
   justification: text("justification").notNull(),
   attachmentUrl: text("attachment_url"),
   status: text("status").default("pending"), // 'pending', 'approved', 'rejected'
   adminId: integer("admin_id").references(() => users.id),
   adminFeedback: text("admin_feedback"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now') * 1000)`),
 });
 
-export const punches = pgTable("punches", {
-  id: serial("id").primaryKey(),
+export const punches = sqliteTable("punches", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").references(() => users.id),
-  timestamp: timestamp("timestamp").notNull(),
+  timestamp: integer("timestamp", { mode: "timestamp" }).notNull(),
   rawLine: text("raw_line"), // Original AFD line for traceability
   afdId: integer("afd_id").references(() => afdFiles.id),
   source: text("source").default("AFD"), // 'AFD' | 'MANUAL' | 'EDITED' | 'WEB'
   justification: text("justification"),
   adjustmentId: integer("adjustment_id").references(() => punchAdjustments.id),
-  isDeleted: boolean("is_deleted").default(false), // Portaria 671: No physical deletion
-  originalTimestamp: timestamp("original_timestamp"), // Keep record of what it was before edit
+  isDeleted: integer("is_deleted", { mode: "boolean" }).default(false), // Portaria 671: No physical deletion
+  originalTimestamp: integer("original_timestamp", { mode: "timestamp" }), // Keep record of what it was before edit
   latitude: text("latitude"),
   longitude: text("longitude"),
   ipAddress: text("ip_address"),
   signature: text("signature"), // Digital signature for the punch itself (receipt)
 });
 
-export const auditLogs = pgTable("audit_logs", {
-  id: serial("id").primaryKey(),
+export const auditLogs = sqliteTable("audit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   adminId: integer("admin_id").references(() => users.id),
   targetUserId: integer("target_user_id").references(() => users.id),
   action: text("action").notNull(), // 'CREATE_PUNCH', 'UPDATE_PUNCH', 'DELETE_PUNCH'
   details: text("details").notNull(),
   ipAddress: text("ip_address"), // LGPD/Compliance
   userAgent: text("user_agent"), // LGPD/Compliance
-  timestamp: timestamp("timestamp").defaultNow(),
+  timestamp: integer("timestamp", { mode: "timestamp" }).default(sql`(strftime('%s', 'now') * 1000)`),
 });
 
 // === RELATIONS ===

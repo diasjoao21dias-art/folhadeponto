@@ -4,7 +4,6 @@ import { users, companySettings, afdFiles, punches, auditLogs, holidays, punchAd
   type AfdFile, type Punch, type AuditLog, type Cargo, type InsertCargo
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
 import bcrypt from "bcryptjs";
 
 export interface IStorage {
@@ -150,7 +149,6 @@ export class DatabaseStorage implements IStorage {
     return entry;
   }
   async getAuditLogs(): Promise<any[]> {
-    const targetUsers = alias(users, "target_users");
     const logs = await db
       .select({
         id: auditLogs.id,
@@ -161,12 +159,10 @@ export class DatabaseStorage implements IStorage {
         ipAddress: auditLogs.ipAddress,
         userAgent: auditLogs.userAgent,
         timestamp: auditLogs.timestamp,
-        adminName: users.name,
-        targetName: targetUsers.name,
+        adminName: sql<string>`(SELECT name FROM users WHERE id = ${auditLogs.adminId})`,
+        targetName: sql<string>`(SELECT name FROM users WHERE id = ${auditLogs.targetUserId})`,
       })
       .from(auditLogs)
-      .leftJoin(users, eq(auditLogs.adminId, users.id))
-      .leftJoin(targetUsers, eq(auditLogs.targetUserId, targetUsers.id))
       .orderBy(desc(auditLogs.timestamp));
 
     return logs.map(log => ({
