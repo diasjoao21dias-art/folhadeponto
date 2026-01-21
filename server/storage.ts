@@ -5,6 +5,7 @@ import { users, companySettings, afdFiles, punches, auditLogs, holidays, punchAd
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import bcrypt from "bcryptjs";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -78,11 +79,15 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).orderBy(users.name);
   }
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+    const [user] = await db.insert(users).values({ ...insertUser, password: hashedPassword }).returning();
     return user;
   }
   async updateUser(id: number, updateUser: Partial<InsertUser>): Promise<User> {
     const updateData = { ...updateUser };
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
     if (updateData.active === false && !updateData.inactivatedAt) {
       updateData.inactivatedAt = new Date();
     } else if (updateData.active === true) {

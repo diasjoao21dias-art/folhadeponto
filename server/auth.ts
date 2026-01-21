@@ -4,6 +4,7 @@ import { Express } from "express";
 import session from "express-session";
 import { storage } from "./storage";
 import { User } from "@shared/schema";
+import bcrypt from "bcryptjs";
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
@@ -11,6 +12,10 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: undefined, // Defaults to MemoryStore (good for MVP, use Redis/DB for prod)
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    }
   };
 
   app.set("trust proxy", 1);
@@ -22,9 +27,15 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || user.password !== password) { // Plaintext for MVP as requested, usually bcrypt
-            return done(null, false, { message: "Incorrect username or password." });
+        if (!user) {
+          return done(null, false, { message: "Usuário não encontrado." });
         }
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+          return done(null, false, { message: "Senha incorreta." });
+        }
+        
         return done(null, user);
       } catch (err) {
         return done(err);

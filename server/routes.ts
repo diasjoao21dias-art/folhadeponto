@@ -654,6 +654,7 @@ async function seedAdminUser() {
       applyNightExtension: true
     }).returning();
     
+    // storage.createUser handles bcrypt hashing
     await storage.createUser({ 
       username: "admin", 
       password: "admin", 
