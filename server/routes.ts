@@ -317,6 +317,16 @@ export async function registerRoutes(
     };
   }
 
+  app.get("/api/timesheet/today-punches", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const user = req.user as User;
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    const todayPunches = await storage.getPunchesByPeriod(user.id, startOfDay, endOfDay);
+    res.json(todayPunches.filter(p => !p.isDeleted));
+  });
+
   app.get(api.timesheet.getMirror.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
     const userId = Number(req.params.userId);
