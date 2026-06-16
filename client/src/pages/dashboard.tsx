@@ -14,9 +14,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-
 export default function EmployeeDashboard() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
@@ -35,67 +32,47 @@ export default function EmployeeDashboard() {
 
   const handleExportPDF = () => {
     if (!mirror) return;
-    const doc = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: "a4"
-    });
-
     const company = mirror.company || { razaoSocial: "-", cnpj: "-", endereco: "-" };
-    
-    doc.setFillColor(240, 240, 240);
-    doc.rect(0, 0, 297, 40, 'F');
-    
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(40, 40, 40);
-    doc.text("ESPELHO DE PONTO ELETRÔNICO", 148.5, 15, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80, 80, 80);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 283, 35, { align: "right" });
-
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(40, 40, 40);
-    doc.text("DADOS DA EMPRESA", 14, 50);
-    doc.text("DADOS DO COLABORADOR", 148.5, 50);
-    
-    doc.line(14, 52, 130, 52);
-    doc.line(148.5, 52, 283, 52);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text(`Razão Social: ${company.razaoSocial}`, 14, 58);
-    doc.text(`CNPJ: ${company.cnpj}`, 14, 63);
-    doc.text(`Endereço: ${company.endereco}`, 14, 68);
-    
-    doc.text(`Nome: ${mirror.employee.name}`, 148.5, 58);
-    doc.text(`CPF: ${mirror.employee.cpf || '-'}`, 148.5, 63);
-    doc.text(`PIS/PASEP: ${mirror.employee.pis || '-'}`, 220, 63);
-    doc.text(`Período: ${format(new Date(mirror.period + "-01T00:00:00"), "MMMM 'de' yyyy", { locale: ptBR })}`, 220, 68);
-
-    autoTable(doc, {
-      startY: 75,
-      head: [['Data', 'Ent 1', 'Sai 1', 'Ent 2', 'Sai 2', 'Ent 3', 'Sai 3', 'Total', 'Saldo', 'Justificativa']],
-      body: mirror.records.map(r => [
-        format(new Date(r.date + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR }),
-        r.isDayOff ? (r.holidayDescription || "FOLGA") : r.punches[0]?.timestamp ? format(new Date(r.punches[0].timestamp), "HH:mm") : "-",
-        r.isDayOff ? "" : r.punches[1]?.timestamp ? format(new Date(r.punches[1].timestamp), "HH:mm") : "-",
-        r.isDayOff ? "" : r.punches[2]?.timestamp ? format(new Date(r.punches[2].timestamp), "HH:mm") : "-",
-        r.isDayOff ? "" : r.punches[3]?.timestamp ? format(new Date(r.punches[3].timestamp), "HH:mm") : "-",
-        r.isDayOff ? "" : r.punches[4]?.timestamp ? format(new Date(r.punches[4].timestamp), "HH:mm") : "-",
-        r.isDayOff ? "" : r.punches[5]?.timestamp ? format(new Date(r.punches[5].timestamp), "HH:mm") : "-",
-        r.totalHours,
-        r.balance,
-        r.punches.map(p => p.justification).filter(Boolean).join("; ")
-      ]),
-      theme: 'grid',
-      headStyles: { fillColor: [51, 51, 51], textColor: [255, 255, 255], fontSize: 8, halign: 'center' },
-      styles: { fontSize: 8 },
-    });
-
-    doc.save(`espelho_ponto_${mirror.employee.name.replace(/\s+/g, '_')}_${mirror.period}.pdf`);
+    const periodo = format(new Date(mirror.period + "-01T00:00:00"), "MMMM 'de' yyyy", { locale: ptBR });
+    const rows = mirror.records.map(r => `
+      <tr>
+        <td>${format(new Date(r.date + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR })}</td>
+        <td>${r.isDayOff ? (r.holidayDescription || "FOLGA") : (r.punches[0]?.timestamp ? format(new Date(r.punches[0].timestamp), "HH:mm") : "-")}</td>
+        <td>${r.isDayOff ? "" : (r.punches[1]?.timestamp ? format(new Date(r.punches[1].timestamp), "HH:mm") : "-")}</td>
+        <td>${r.isDayOff ? "" : (r.punches[2]?.timestamp ? format(new Date(r.punches[2].timestamp), "HH:mm") : "-")}</td>
+        <td>${r.isDayOff ? "" : (r.punches[3]?.timestamp ? format(new Date(r.punches[3].timestamp), "HH:mm") : "-")}</td>
+        <td>${r.isDayOff ? "" : (r.punches[4]?.timestamp ? format(new Date(r.punches[4].timestamp), "HH:mm") : "-")}</td>
+        <td>${r.isDayOff ? "" : (r.punches[5]?.timestamp ? format(new Date(r.punches[5].timestamp), "HH:mm") : "-")}</td>
+        <td style="font-weight:bold">${r.totalHours}</td>
+        <td style="font-weight:bold;color:${r.balance.startsWith('-') ? '#c00' : '#080'}">${r.balance}</td>
+        <td>${r.punches.map(p => p.justification).filter(Boolean).join("; ")}</td>
+      </tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Espelho de Ponto</title>
+      <style>body{font-family:Arial,sans-serif;font-size:9pt;margin:10mm}
+      h2{text-align:center;margin-bottom:4px}
+      .info{display:flex;gap:40px;margin-bottom:10px;font-size:8pt}
+      table{width:100%;border-collapse:collapse}
+      th,td{border:1px solid #ccc;padding:3px 5px;text-align:center}
+      th{background:#333;color:#fff}
+      @media print{@page{size:A4 landscape;margin:10mm}}</style>
+      </head><body>
+      <h2>ESPELHO DE PONTO ELETRÔNICO</h2>
+      <p style="text-align:right;font-size:8pt">Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}</p>
+      <div class="info">
+        <div><b>Empresa:</b> ${company.razaoSocial} | CNPJ: ${company.cnpj}</div>
+        <div><b>Colaborador:</b> ${mirror.employee.name} | CPF: ${mirror.employee.cpf || "-"} | PIS: ${mirror.employee.pis || "-"} | Período: ${periodo}</div>
+      </div>
+      <table><thead><tr><th>Data</th><th>Ent 1</th><th>Sai 1</th><th>Ent 2</th><th>Sai 2</th><th>Ent 3</th><th>Sai 3</th><th>Total</th><th>Saldo</th><th>Justificativa</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+      <div style="margin-top:10px;font-size:8pt">
+        <b>Total Trabalhado:</b> ${mirror.summary.totalHours} &nbsp;
+        <b>Extras:</b> +${mirror.summary.totalOvertime} &nbsp;
+        <b>Atrasos:</b> -${mirror.summary.totalNegative} &nbsp;
+        <b>Saldo Final:</b> ${mirror.summary.finalBalance}
+      </div>
+      </body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); w.print(); }
   };
 
   const clockInMutation = useMutation({
