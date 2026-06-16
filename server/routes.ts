@@ -384,13 +384,126 @@ export async function registerRoutes(
   });
 
   // Export Layouts AFDT/ACJEF (Stub)
-  app.get("/api/reports/export/:type", async (req, res) => {
+  app.get("/api/reports/export/afdt", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
-    const type = req.params.type; // 'afdt' | 'acjef'
-    // Simplified stub for file export
     res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Content-Disposition', `attachment; filename=${type.toUpperCase()}.txt`);
-    res.send(`000000001${type.toUpperCase()}... [LAYOUT ${type.toUpperCase()} SIMULADO]`);
+    res.setHeader('Content-Disposition', `attachment; filename=AFDT.txt`);
+    res.send(`000000001AFDT... [LAYOUT AFDT SIMULADO]`);
+  });
+
+  app.get("/api/reports/export/acjef", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename=ACJEF.txt`);
+    res.send(`000000001ACJEF... [LAYOUT ACJEF SIMULADO]`);
+  });
+
+  // Exportação Domínio Sistemas
+  app.get("/api/reports/export/dominio", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const monthStr = req.query.month as string;
+    if (!monthStr) return res.status(400).json({ message: "Missing month" });
+
+    const allUsers = await storage.getUsers();
+    const company = await storage.getCompanySettings();
+    // Domínio layout: CNPJ + período no header, depois por funcionário
+    const cnpj = (company?.cnpj || "00000000000000").replace(/\D/g, "").padEnd(14, "0");
+    const [yyyy, mm] = monthStr.split("-");
+    let out = `HD${cnpj}${mm}${yyyy}\n`;
+
+    for (const user of allUsers) {
+      try {
+        const data = await calculateMonthlySummary(user.id, monthStr);
+        const pis = (user.pis || "").replace(/\D/g, "").padStart(11, "0");
+        const cpf = (user.cpf || "").replace(/\D/g, "").padStart(11, "0");
+        const hExtra = String(data.summary.totalOvertimeMinutes).padStart(6, "0");
+        const hNeg = String(data.summary.totalNegativeMinutes).padStart(6, "0");
+        const hNot = String(data.summary.nightMinutes || 0).padStart(6, "0");
+        out += `TR${pis}${cpf}${mm}${yyyy}${hExtra}${hNeg}${hNot}\n`;
+      } catch { continue; }
+    }
+    out += `TL${String(allUsers.length).padStart(6, "0")}\n`;
+
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=Dominio_${monthStr}.txt`);
+    res.send(out);
+  });
+
+  // Exportação Senior Sistemas
+  app.get("/api/reports/export/senior", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const monthStr = req.query.month as string;
+    if (!monthStr) return res.status(400).json({ message: "Missing month" });
+
+    const allUsers = await storage.getUsers();
+    let csv = "\ufeff";
+    csv += "CHAPA;NOME;PIS;CPF;PERIODO;H_EXTRAS_MIN;H_NEGATIVAS_MIN;H_NOTURNAS_MIN;H_EXTRAS_FORM;H_NEGATIVAS_FORM;SALDO_FINAL\n";
+
+    for (const user of allUsers) {
+      try {
+        const data = await calculateMonthlySummary(user.id, monthStr);
+        csv += [
+          user.id,
+          user.name,
+          user.pis || "",
+          user.cpf || "",
+          monthStr,
+          data.summary.totalOvertimeMinutes,
+          data.summary.totalNegativeMinutes,
+          data.summary.nightMinutes || 0,
+          data.summary.totalOvertime,
+          data.summary.totalNegative,
+          data.summary.finalBalance,
+        ].join(";") + "\n";
+      } catch { continue; }
+    }
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=Senior_${monthStr}.csv`);
+    res.send(csv);
+  });
+
+  // Exportação ADP
+  app.get("/api/reports/export/adp", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send();
+    const monthStr = req.query.month as string;
+    if (!monthStr) return res.status(400).json({ message: "Missing month" });
+
+    const allUsers = await storage.getUsers();
+    const startDate = startOfMonth(parse(monthStr, 'yyyy-MM', new Date()));
+    const endDate = endOfMonth(startDate);
+
+    let csv = "\ufeff";
+    csv += "EmployeeID,EmployeeName,TaxID,Period,Date,TimeIn,TimeOut,HoursWorked,OvertimeMinutes,NightMinutes,Balance\n";
+
+    for (const user of allUsers) {
+      try {
+        const data = await calculateMonthlySummary(user.id, monthStr);
+        for (const record of data.records) {
+          if (record.isDayOff || record.punches.length === 0) continue;
+          const timeIn = record.punches[0]?.timestamp ? format(new Date(record.punches[0].timestamp), "HH:mm") : "";
+          const lastPunch = record.punches[record.punches.length - 1];
+          const timeOut = lastPunch?.timestamp && record.punches.length > 1 ? format(new Date(lastPunch.timestamp), "HH:mm") : "";
+          csv += [
+            user.id,
+            `"${user.name}"`,
+            user.cpf || "",
+            monthStr,
+            record.date,
+            timeIn,
+            timeOut,
+            record.totalHours,
+            record.balanceMinutes > 0 ? record.balanceMinutes : 0,
+            record.nightMinutes || 0,
+            record.balance,
+          ].join(",") + "\n";
+        }
+      } catch { continue; }
+    }
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=ADP_${monthStr}.csv`);
+    res.send(csv);
   });
 
   function calculateNightOverlap(start: Date, end: Date, nightStartStr: string, nightEndStr: string): number {
@@ -485,7 +598,26 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.status(401).send();
     const user = req.user as User;
     const now = new Date();
-    
+    const { latitude, longitude } = req.body || {};
+
+    // Geofencing: valida localização se configurada para o usuário
+    if (user.allowedLat && user.allowedLng && latitude != null && longitude != null) {
+      const distM = haversineDistance(
+        parseFloat(user.allowedLat), parseFloat(user.allowedLng),
+        parseFloat(latitude), parseFloat(longitude)
+      );
+      const radius = user.allowedRadius ?? 200;
+      if (distM > radius) {
+        return res.status(403).json({ 
+          message: `Você está fora da área permitida de ponto. Distância: ${Math.round(distM)}m (limite: ${radius}m).` 
+        });
+      }
+    } else if (user.allowedLat && user.allowedLng && (latitude == null || longitude == null)) {
+      return res.status(403).json({ 
+        message: "Este funcionário exige localização para registrar ponto. Permita o acesso à localização e tente novamente." 
+      });
+    }
+
     // Validação de batidas duplicadas (mesmo minuto)
     const startOfMinute = new Date(now);
     startOfMinute.setSeconds(0, 0);
@@ -501,14 +633,17 @@ export async function registerRoutes(
       userId: user.id, 
       timestamp: now, 
       source: 'MANUAL',
-      justification: 'Marcação via sistema (Web)' 
+      justification: 'Marcação via sistema (Web)',
+      latitude: latitude != null ? String(latitude) : null,
+      longitude: longitude != null ? String(longitude) : null,
+      ipAddress: req.ip,
     }]);
 
     await storage.createAuditLog({
       adminId: user.id,
       targetUserId: user.id,
       action: 'CLOCK_IN',
-      details: `Registro de ponto via web às ${format(now, "HH:mm:ss")}.`,
+      details: `Registro de ponto via web às ${format(now, "HH:mm:ss")}${latitude != null ? ` | GPS: ${latitude},${longitude}` : ''}.`,
       ipAddress: req.ip,
       userAgent: req.get('user-agent')
     });
@@ -635,6 +770,17 @@ export async function registerRoutes(
 
   await seedAdminUser();
   return httpServer;
+}
+
+// Haversine formula: returns distance in meters between two GPS coordinates
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
 function formatMinutes(minutes: number, prefix = ''): string {

@@ -18,6 +18,7 @@ import AuditPage from "@/pages/admin/audit";
 import HolidaysPage from "@/pages/admin/holidays";
 import AdjustmentsPage from "@/pages/admin/adjustments";
 import AbsenteismoPage from "@/pages/admin/absenteismo";
+import ReportsPage from "@/pages/admin/reports";
 
 function ProtectedRoute({ 
   component: Component, 
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/admin/audit"><ProtectedRoute component={AuditPage} adminOnly /></Route>
       <Route path="/admin/holidays"><ProtectedRoute component={HolidaysPage} adminOnly /></Route>
       <Route path="/admin/absenteismo"><ProtectedRoute component={AbsenteismoPage} adminOnly /></Route>
+      <Route path="/admin/reports"><ProtectedRoute component={ReportsPage} adminOnly /></Route>
       <Route path="/">
         {() => {
           const { user, isLoading } = useAuth();

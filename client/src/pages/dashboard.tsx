@@ -75,12 +75,29 @@ export default function EmployeeDashboard() {
     if (w) { w.document.write(html); w.document.close(); w.print(); }
   };
 
+  const getGpsLocation = (): Promise<{ latitude: number; longitude: number } | null> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) { resolve(null); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+        () => resolve(null),
+        { timeout: 8000 }
+      );
+    });
+  };
+
   const clockInMutation = useMutation({
     mutationFn: async () => {
+      const gps = await getGpsLocation();
       const res = await fetch(api.timesheet.clockIn.path, {
         method: api.timesheet.clockIn.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(gps ?? {}),
       });
-      if (!res.ok) throw new Error("Erro ao registrar ponto");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Erro ao registrar ponto");
+      }
       return res.json();
     },
     onSuccess: () => {

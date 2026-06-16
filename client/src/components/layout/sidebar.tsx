@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   Calendar,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  BarChart2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,10 +26,7 @@ const sidebarItems = [
   { icon: Clock, label: "Pendências RH", href: "/admin/adjustments" },
   { icon: AlertTriangle, label: "Absenteísmo", href: "/admin/absenteismo" },
   { icon: Calendar, label: "Feriados", href: "/admin/holidays" },
-  { icon: FileText, label: "Exportar ERP", href: "#", onClick: () => {
-    const month = new Date().toISOString().slice(0, 7);
-    window.open(`/api/reports/export/erp?month=${month}`, '_blank');
-  }},
+  { icon: BarChart2, label: "Exportar Folha", href: "/admin/reports" },
   { icon: Upload, label: "Importar AFD", href: "/admin/import" },
   { icon: ShieldCheck, label: "Auditoria", href: "/admin/audit" },
   { icon: Settings, label: "Configurações", href: "/admin/settings" },

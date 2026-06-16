@@ -310,6 +310,24 @@ function UserDialog({
               <Label>Jornada de Trabalho (Entrada-Saída, Entrada-Saída)</Label>
               <Input {...form.register("workSchedule")} placeholder="Ex: 08:00-12:00,13:00-17:00" />
             </div>
+            <div className="col-span-2 border-t pt-4 mt-2">
+              <p className="text-sm font-semibold text-foreground mb-3">📍 Geofencing (opcional)</p>
+              <p className="text-xs text-muted-foreground mb-3">Se preenchido, o ponto só poderá ser batido dentro do raio definido a partir das coordenadas da empresa/obra.</p>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Latitude</Label>
+                  <Input {...form.register("allowedLat")} placeholder="Ex: -23.5505" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Longitude</Label>
+                  <Input {...form.register("allowedLng")} placeholder="Ex: -46.6333" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Raio (metros)</Label>
+                  <Input type="number" {...form.register("allowedRadius", { valueAsNumber: true })} placeholder="200" />
+                </div>
+              </div>
+            </div>
           </div>
           <div className="flex justify-end pt-4">
             <Button type="submit" disabled={isPending}>
