@@ -38,6 +38,7 @@ export default function AuditPage() {
             </div>
           ) : (
             <div className="border rounded-xl bg-card overflow-hidden">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -75,6 +76,7 @@ export default function AuditPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </div>

@@ -48,6 +48,7 @@ export default function AdjustmentsPage() {
           </div>
 
           <Card className="dashboard-card overflow-hidden">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
@@ -95,6 +96,7 @@ export default function AdjustmentsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </Card>
         </div>
       </main>

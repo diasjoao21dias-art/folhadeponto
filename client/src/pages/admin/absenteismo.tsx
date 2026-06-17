@@ -80,6 +80,7 @@ export default function AbsenteismoPage() {
               <CardTitle>Detalhamento por Colaborador</CardTitle>
               <CardDescription>Lista detalhada de ausências registradas no período.</CardDescription>
             </CardHeader>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
@@ -154,6 +155,7 @@ export default function AbsenteismoPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </Card>
         </div>
       </main>

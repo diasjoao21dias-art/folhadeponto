@@ -65,6 +65,7 @@ export default function EmployeesPage() {
           </div>
 
           <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
@@ -127,6 +128,7 @@ export default function EmployeesPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
         </div>
       </main>
