@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sidebar } from "@/components/layout/sidebar";
+import { AdminLayout } from "@/components/layout/admin-layout";
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "@/hooks/use-users";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,9 +39,7 @@ export default function EmployeesPage() {
   );
 
   return (
-    <div className="flex min-h-screen bg-background/50">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
+    <AdminLayout>
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 page-header">
             <div>
@@ -131,7 +129,6 @@ export default function EmployeesPage() {
             </div>
           </div>
         </div>
-      </main>
 
       <UserDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} mode="create" />
       
@@ -143,7 +140,7 @@ export default function EmployeesPage() {
           defaultValues={editingUser} 
         />
       )}
-    </div>
+    </AdminLayout>
   );
 }
 

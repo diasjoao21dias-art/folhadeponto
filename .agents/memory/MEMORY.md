@@ -1,0 +1,2 @@
+- [Admin layout pattern](admin-layout-pattern.md) — AdminLayout component handles mobile/desktop shell; all admin pages use it instead of repeating flex wrapper + Sidebar.
+- [Overflow-x-auto closing div](overflow-x-auto-div.md) — when wrapping a Table in overflow-x-auto, always add the closing </div> explicitly before the outer container closes.

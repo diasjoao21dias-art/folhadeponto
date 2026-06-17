@@ -99,9 +99,9 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="min-h-screen bg-background w-full">
       <Sidebar />
-      <main className="flex-1 lg:ml-64 min-h-screen">
+      <main className="lg:ml-64 min-h-screen">
         {/* Top bar */}
         <div className="border-b border-border/50 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="px-6 md:px-8 h-16 flex items-center justify-between">

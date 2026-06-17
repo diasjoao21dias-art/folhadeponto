@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sidebar } from "@/components/layout/sidebar";
+import { AdminLayout } from "@/components/layout/admin-layout";
 import { useUsers } from "@/hooks/use-users";
 import { useTimesheetMirror } from "@/hooks/use-timesheet";
 import { Button } from "@/components/ui/button";
@@ -151,9 +151,7 @@ export default function TimesheetPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background/50">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
+    <AdminLayout>
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 page-header">
             <div>
@@ -291,7 +289,6 @@ export default function TimesheetPage() {
             </div>
           ) : null}
         </div>
-      </main>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
@@ -303,6 +300,6 @@ export default function TimesheetPage() {
           <DialogFooter><Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button><Button onClick={handleSave}>Salvar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }

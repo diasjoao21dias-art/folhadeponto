@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/layout/sidebar";
+import { AdminLayout } from "@/components/layout/admin-layout";
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO } from "date-fns";
@@ -21,9 +21,7 @@ export default function AuditPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background/50">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
+    <AdminLayout>
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="page-header">
             <h1 className="page-title">Auditoria do Sistema</h1>
@@ -80,7 +78,6 @@ export default function AuditPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </AdminLayout>
   );
 }

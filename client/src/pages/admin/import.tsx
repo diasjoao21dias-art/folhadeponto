@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/layout/sidebar";
+import { AdminLayout } from "@/components/layout/admin-layout";
 import { useUploadAfd, useAfdFiles } from "@/hooks/use-afd";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -28,9 +28,7 @@ export default function ImportPage() {
   });
 
   return (
-    <div className="flex min-h-screen bg-background/50">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
+    <AdminLayout>
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="page-header">
             <h1 className="page-title">Importação AFD</h1>
@@ -151,7 +149,6 @@ export default function ImportPage() {
             </Card>
           </div>
         </div>
-      </main>
-    </div>
+    </AdminLayout>
   );
 }

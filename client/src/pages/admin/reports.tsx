@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sidebar } from "@/components/layout/sidebar";
+import { AdminLayout } from "@/components/layout/admin-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -88,9 +88,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background/50">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
+    <AdminLayout>
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 page-header">
             <div>
@@ -169,7 +167,6 @@ export default function ReportsPage() {
             })}
           </div>
         </div>
-      </main>
-    </div>
+    </AdminLayout>
   );
 }
