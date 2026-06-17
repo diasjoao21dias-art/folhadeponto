@@ -25,12 +25,12 @@ export default function AbsenteismoPage() {
   return (
     <div className="flex min-h-screen bg-background/50">
       <Sidebar />
-      <main className="flex-1 lg:ml-72 p-4 md:p-8 animate-in">
+      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center page-header">
             <div>
-              <h1 className="text-3xl font-display font-bold text-foreground">Relatório de Absenteísmo</h1>
-              <p className="text-muted-foreground mt-1">Visão geral de faltas, atrasos e atestados ({format(new Date(), "MMMM yyyy", { locale: ptBR })}).</p>
+              <h1 className="page-title">Relatório de Absenteísmo</h1>
+              <p className="page-subtitle">Visão geral de faltas, atrasos e atestados ({format(new Date(), "MMMM yyyy", { locale: ptBR })}).</p>
             </div>
             <div className="flex gap-2">
                <div className="bg-card p-3 rounded-lg border flex items-center gap-3">

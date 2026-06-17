@@ -41,12 +41,12 @@ export default function EmployeesPage() {
   return (
     <div className="flex min-h-screen bg-background/50">
       <Sidebar />
-      <main className="flex-1 lg:ml-72 p-4 md:p-8 animate-in">
+      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 page-header">
             <div>
-              <h1 className="text-3xl font-display font-bold text-foreground">Colaboradores</h1>
-              <p className="text-muted-foreground mt-1">Gerencie os funcionários e permissões.</p>
+              <h1 className="page-title">Colaboradores</h1>
+              <p className="page-subtitle">Gerencie os funcionários e permissões.</p>
             </div>
             <Button onClick={() => setIsCreateOpen(true)} className="shadow-lg shadow-primary/20">
               <UserPlus className="mr-2 h-4 w-4" />

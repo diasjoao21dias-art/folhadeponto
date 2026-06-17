@@ -40,11 +40,11 @@ export default function AdjustmentsPage() {
   return (
     <div className="flex min-h-screen bg-background/50">
       <Sidebar />
-      <main className="flex-1 lg:ml-72 p-4 md:p-8 animate-in">
+      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-3xl font-display font-bold text-foreground">Gestão de Pendências</h1>
-            <p className="text-muted-foreground mt-1">Aprovação de ajustes, atestados e pontos esquecidos.</p>
+          <div className="page-header">
+            <h1 className="page-title">Gestão de Pendências</h1>
+            <p className="page-subtitle">Aprovação de ajustes, atestados e pontos esquecidos.</p>
           </div>
 
           <Card className="dashboard-card overflow-hidden">

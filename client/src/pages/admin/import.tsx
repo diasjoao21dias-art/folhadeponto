@@ -30,11 +30,11 @@ export default function ImportPage() {
   return (
     <div className="flex min-h-screen bg-background/50">
       <Sidebar />
-      <main className="flex-1 lg:ml-72 p-4 md:p-8 animate-in">
+      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
         <div className="max-w-7xl mx-auto space-y-8">
-          <div>
-            <h1 className="text-3xl font-display font-bold text-foreground">Importação AFD</h1>
-            <p className="text-muted-foreground mt-2">Importe arquivos de Relógio de Ponto Eletrônico (REP).</p>
+          <div className="page-header">
+            <h1 className="page-title">Importação AFD</h1>
+            <p className="page-subtitle">Importe arquivos de Relógio de Ponto Eletrônico (REP).</p>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-3">

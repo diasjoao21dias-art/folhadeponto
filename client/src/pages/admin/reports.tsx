@@ -90,12 +90,12 @@ export default function ReportsPage() {
   return (
     <div className="flex min-h-screen bg-background/50">
       <Sidebar />
-      <main className="flex-1 lg:ml-72 p-4 md:p-8 animate-in">
+      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
         <div className="max-w-5xl mx-auto space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 page-header">
             <div>
-              <h1 className="text-3xl font-display font-bold text-foreground">Exportação de Folha</h1>
-              <p className="text-muted-foreground mt-1">
+              <h1 className="page-title">Exportação de Folha</h1>
+              <p className="page-subtitle">
                 Exporte os dados de ponto nos formatos dos principais sistemas de RH e folha de pagamento.
               </p>
             </div>

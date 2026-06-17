@@ -40,12 +40,12 @@ export default function HolidaysPage() {
   return (
     <div className="flex min-h-screen bg-background/50">
       <Sidebar />
-      <main className="flex-1 lg:ml-72 p-4 md:p-8 animate-in">
+      <main className="flex-1 lg:ml-64 p-6 md:p-8 animate-in">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center page-header">
             <div>
-              <h1 className="text-3xl font-display font-bold">Feriados</h1>
-              <p className="text-muted-foreground">Cadastre feriados para abono automático.</p>
+              <h1 className="page-title">Feriados</h1>
+              <p className="page-subtitle">Cadastre feriados para abono automático.</p>
             </div>
             <Button onClick={() => setIsOpen(true)}><Plus className="mr-2 h-4 w-4" /> Novo Feriado</Button>
           </div>
