@@ -46,6 +46,7 @@ function useLoginMutation() {
       return api.auth.login.responses[200].parse(await res.json());
     },
     onSuccess: (user) => {
+      queryClient.clear();
       queryClient.setQueryData([api.auth.me.path], user);
       toast({ title: "Bem-vindo de volta!", description: `Logado como ${user.name}` });
     },
@@ -72,7 +73,7 @@ function useLogoutMutation() {
       if (!res.ok) throw new Error("Erro ao sair");
     },
     onSuccess: () => {
-      queryClient.setQueryData([api.auth.me.path], null);
+      queryClient.clear();
       toast({ title: "Até logo!", description: "Você saiu do sistema." });
     },
   });
