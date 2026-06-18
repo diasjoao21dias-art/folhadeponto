@@ -1,30 +1,55 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { LogOut, Clock, MousePointer2, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { LogOut, Clock, MousePointer2, Loader2, AlertCircle, CheckCircle2, MapPin, MapPinOff, ShieldAlert, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+
+type GpsStatus = "checking" | "granted" | "denied" | "unavailable" | "idle";
 
 export default function EmployeeDashboard() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [isAdjOpen, setIsAdjOpen] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>("checking");
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const checkGpsPermission = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setGpsStatus("unavailable");
+      return;
+    }
+    if (navigator.permissions) {
+      try {
+        const result = await navigator.permissions.query({ name: "geolocation" });
+        const map: Record<PermissionState, GpsStatus> = {
+          granted: "granted",
+          denied: "denied",
+          prompt: "idle",
+        };
+        setGpsStatus(map[result.state]);
+        result.onchange = () => setGpsStatus(map[result.state]);
+        return;
+      } catch {}
+    }
+    setGpsStatus("idle");
+  }, []);
+
+  useEffect(() => { checkGpsPermission(); }, [checkGpsPermission]);
 
   const { data: todayPunches, refetch: refetchPunches } = useQuery<any[]>({
     queryKey: ["/api/timesheet/today-punches"],
@@ -36,13 +61,26 @@ export default function EmployeeDashboard() {
     enabled: !!user,
   });
 
-  const getGpsLocation = (): Promise<{ latitude: number; longitude: number } | null> => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) { resolve(null); return; }
+  const getGpsLocation = (): Promise<{ latitude: number; longitude: number }> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("GPS não disponível neste dispositivo."));
+        return;
+      }
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-        () => resolve(null),
-        { timeout: 8000 }
+        (pos) => {
+          setGpsStatus("granted");
+          resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        },
+        (err) => {
+          if (err.code === err.PERMISSION_DENIED) {
+            setGpsStatus("denied");
+            reject(new Error("GPS_DENIED"));
+          } else {
+            reject(new Error("Não foi possível obter sua localização. Tente novamente."));
+          }
+        },
+        { timeout: 10000, enableHighAccuracy: true }
       );
     });
   };
@@ -53,7 +91,7 @@ export default function EmployeeDashboard() {
       const res = await fetch(api.timesheet.clockIn.path, {
         method: api.timesheet.clockIn.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(gps ?? {}),
+        body: JSON.stringify(gps),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -63,10 +101,12 @@ export default function EmployeeDashboard() {
     },
     onSuccess: () => {
       refetchPunches();
-      toast({ title: "Ponto registrado!", description: `Às ${format(new Date(), "HH:mm:ss")}` });
+      toast({ title: "✅ Ponto registrado!", description: `Às ${format(new Date(), "HH:mm:ss")}` });
     },
     onError: (error: Error) => {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      if (error.message !== "GPS_DENIED") {
+        toast({ variant: "destructive", title: "Erro", description: error.message });
+      }
     },
   });
 
@@ -125,31 +165,82 @@ export default function EmployeeDashboard() {
               {format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-5">
             <div className="text-5xl font-mono font-bold tracking-tight">
               {format(now, "HH:mm:ss")}
             </div>
 
-            <Button
-              size="lg"
-              className="w-full bg-white text-primary hover:bg-blue-50 font-bold h-14 text-lg shadow-lg"
-              onClick={() => clockInMutation.mutate()}
-              disabled={clockInMutation.isPending}
-              data-testid="button-clock-in"
-            >
-              {clockInMutation.isPending ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                <>
-                  <MousePointer2 className="mr-2 h-5 w-5" />
-                  Registrar Ponto Agora
-                </>
-              )}
-            </Button>
+            {/* GPS status indicator */}
+            <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg font-medium ${
+              gpsStatus === "granted"     ? "bg-green-500/20 text-green-100" :
+              gpsStatus === "denied"      ? "bg-red-500/25 text-red-100" :
+              gpsStatus === "unavailable" ? "bg-red-500/25 text-red-100" :
+              gpsStatus === "checking"    ? "bg-white/10 text-blue-100" :
+              "bg-yellow-500/20 text-yellow-100"
+            }`}>
+              {gpsStatus === "granted"     && <><MapPin className="w-3.5 h-3.5 flex-shrink-0" /> GPS ativo — localização disponível</>}
+              {gpsStatus === "denied"      && <><MapPinOff className="w-3.5 h-3.5 flex-shrink-0" /> GPS bloqueado — permissão negada</>}
+              {gpsStatus === "unavailable" && <><MapPinOff className="w-3.5 h-3.5 flex-shrink-0" /> GPS não disponível neste dispositivo</>}
+              {gpsStatus === "checking"    && <><Loader2 className="w-3.5 h-3.5 flex-shrink-0 animate-spin" /> Verificando GPS...</>}
+              {gpsStatus === "idle"        && <><MapPin className="w-3.5 h-3.5 flex-shrink-0" /> GPS necessário — será solicitado ao registrar</>}
+            </div>
 
-            <p className="text-xs text-blue-100/80 text-center">
-              Sua localização e horário serão registrados de forma segura.
-            </p>
+            {/* GPS denied — full warning block */}
+            {(gpsStatus === "denied" || gpsStatus === "unavailable") ? (
+              <div className="bg-red-500/15 border border-red-400/30 rounded-xl p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className="w-5 h-5 text-red-200 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-white text-sm">
+                      {gpsStatus === "denied" ? "Permissão de GPS negada" : "GPS não disponível"}
+                    </p>
+                    <p className="text-blue-100/80 text-xs mt-1 leading-relaxed">
+                      {gpsStatus === "denied"
+                        ? "O registro de ponto exige acesso à sua localização para garantir rastreabilidade e conformidade legal. Você bloqueou o GPS para este site."
+                        : "Este dispositivo não possui GPS ou o navegador não suporta geolocalização."}
+                    </p>
+                  </div>
+                </div>
+                {gpsStatus === "denied" && (
+                  <div className="bg-white/10 rounded-lg p-3 text-xs text-blue-100/90 space-y-1">
+                    <p className="font-semibold text-white">Como liberar o GPS:</p>
+                    <p>📍 <strong>Chrome/Edge:</strong> clique no cadeado 🔒 na barra de endereço → Localização → Permitir</p>
+                    <p>📍 <strong>Firefox:</strong> clique no ícone de permissões → Localização → Permitir</p>
+                    <p>📍 <strong>Safari:</strong> Ajustes → Safari → Localização → Permitir</p>
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full border-white/30 text-white hover:bg-white/10 bg-transparent text-xs"
+                  onClick={checkGpsPermission}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                  Já liberei — verificar novamente
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button
+                  size="lg"
+                  className="w-full bg-white text-primary hover:bg-blue-50 font-bold h-14 text-lg shadow-lg disabled:opacity-60"
+                  onClick={() => clockInMutation.mutate()}
+                  disabled={clockInMutation.isPending || gpsStatus === "checking"}
+                  data-testid="button-clock-in"
+                >
+                  {clockInMutation.isPending ? (
+                    <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Obtendo GPS...</>
+                  ) : gpsStatus === "checking" ? (
+                    <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Verificando GPS...</>
+                  ) : (
+                    <><MousePointer2 className="mr-2 h-5 w-5" /> Registrar Ponto Agora</>
+                  )}
+                </Button>
+                <p className="text-xs text-blue-100/80 text-center">
+                  Sua localização e horário serão registrados de forma segura.
+                </p>
+              </>
+            )}
 
             <div className="pt-2 border-t border-white/20">
               <Dialog open={isAdjOpen} onOpenChange={setIsAdjOpen}>
