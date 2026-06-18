@@ -327,6 +327,13 @@ export async function registerRoutes(
     res.json(todayPunches.filter(p => !p.isDeleted));
   });
 
+  app.get(api.timesheet.listAdjustments.path, async (req, res) => {
+    const user = req.user as User;
+    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
+    const adjs = await storage.getAdjustments(req.query);
+    res.json(adjs);
+  });
+
   app.get(api.timesheet.getMirror.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
     const userId = Number(req.params.userId);
@@ -659,13 +666,6 @@ export async function registerRoutes(
     });
 
     res.status(201).json({ message: "Ponto registrado com sucesso", timestamp: now });
-  });
-
-  app.get(api.timesheet.listAdjustments.path, async (req, res) => {
-    const user = req.user as User;
-    if (!req.isAuthenticated() || user?.role !== 'admin') return res.status(403).send();
-    const adjs = await storage.getAdjustments(req.query);
-    res.json(adjs);
   });
 
   app.post(api.timesheet.createAdjustment.path, async (req, res) => {
