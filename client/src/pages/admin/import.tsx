@@ -101,6 +101,7 @@ export default function ImportPage() {
                 <CardTitle>Histórico de Importações</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -145,6 +146,7 @@ export default function ImportPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </div>

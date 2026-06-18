@@ -184,6 +184,7 @@ export default function TimesheetPage() {
           {isLoading ? (<div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>) : mirror ? (
             <div className="space-y-6 animate-in">
               <Card className="dashboard-card overflow-hidden">
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-muted/50">
                     <TableRow>
@@ -232,6 +233,7 @@ export default function TimesheetPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </Card>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

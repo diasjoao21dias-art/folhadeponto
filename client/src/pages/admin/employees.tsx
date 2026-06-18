@@ -228,12 +228,12 @@ function UserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "Novo Colaborador" : "Editar Colaborador"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nome Completo</Label>
               <Input {...form.register("name")} required />
@@ -305,14 +305,14 @@ function UserDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 col-span-2">
+            <div className="space-y-2 col-span-1 sm:col-span-2">
               <Label>Jornada de Trabalho (Entrada-Saída, Entrada-Saída)</Label>
               <Input {...form.register("workSchedule")} placeholder="Ex: 08:00-12:00,13:00-17:00" />
             </div>
-            <div className="col-span-2 border-t pt-4 mt-2">
+            <div className="col-span-1 sm:col-span-2 border-t pt-4 mt-2">
               <p className="text-sm font-semibold text-foreground mb-3">📍 Geofencing (opcional)</p>
               <p className="text-xs text-muted-foreground mb-3">Se preenchido, o ponto só poderá ser batido dentro do raio definido a partir das coordenadas da empresa/obra.</p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Latitude</Label>
                   <Input {...form.register("allowedLat")} placeholder="Ex: -23.5505" />

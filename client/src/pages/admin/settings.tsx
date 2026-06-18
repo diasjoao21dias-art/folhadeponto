@@ -111,7 +111,7 @@ export default function SettingsPage() {
                       </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Tolerância Diária (Minutos)</Label>
                         <Input 
@@ -128,7 +128,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                       <div className="space-y-2">
                         <Label>Início Hora Noturna</Label>
                         <Input {...form.register("nightShiftStart")} />

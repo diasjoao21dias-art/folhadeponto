@@ -119,7 +119,7 @@ export default function AbsenteismoPage() {
                                 </div>
                               </div>
                               
-                              <div className="grid grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="p-3 border rounded-lg">
                                   <div className="flex items-center gap-2 text-red-600 mb-1">
                                     <Calendar className="w-4 h-4" />
