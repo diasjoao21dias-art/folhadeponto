@@ -204,21 +204,24 @@ function UserDialog({
     if (!addressSearch.trim()) return;
     setIsSearchingAddress(true);
     try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressSearch)}&format=json&limit=1&countrycodes=br`;
-      const res = await fetch(url, {
-        headers: { "Accept-Language": "pt-BR", "User-Agent": "PontoDigital/1.0" },
-      });
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(addressSearch)}`);
+      if (!res.ok) throw new Error("Erro no servidor");
       const data = await res.json();
       if (data && data.length > 0) {
-        const { lat, lon } = data[0];
+        const { lat, lon, display_name } = data[0];
         form.setValue("allowedLat", lat);
         form.setValue("allowedLng", lon);
-        if (!form.getValues("allowedRadius")) {
+        // Always set radius to 200m if current value is missing or too small (< 50m)
+        const currentRadius = form.getValues("allowedRadius");
+        if (!currentRadius || currentRadius < 50) {
           form.setValue("allowedRadius", 200);
         }
-        toast({ title: "Coordenadas encontradas!", description: `Lat: ${parseFloat(lat).toFixed(6)}, Lng: ${parseFloat(lon).toFixed(6)}` });
+        toast({
+          title: "Coordenadas encontradas!",
+          description: display_name?.split(",").slice(0, 3).join(", ") || `Lat: ${parseFloat(lat).toFixed(5)}, Lng: ${parseFloat(lon).toFixed(5)}`,
+        });
       } else {
-        toast({ title: "Endereço não encontrado", description: "Tente um endereço mais completo.", variant: "destructive" });
+        toast({ title: "Endereço não encontrado", description: "Tente ser mais específico: inclua cidade e estado.", variant: "destructive" });
       }
     } catch {
       toast({ title: "Erro ao buscar endereço", description: "Verifique sua conexão e tente novamente.", variant: "destructive" });
