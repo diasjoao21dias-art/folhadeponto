@@ -778,22 +778,52 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
-  // Geocoding proxy — calls Nominatim from server side to avoid CORS/User-Agent browser restrictions
+  // Geocoding proxy — calls Nominatim from server side with automatic fallback for Brazilian addresses
   app.get("/api/geocode", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send();
-    const q = req.query.q as string;
-    if (!q || !q.trim()) return res.status(400).json({ message: "Missing query" });
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=3&addressdetails=1`;
-      const response = await fetch(url, {
+    const q = (req.query.q as string || "").trim();
+    if (!q) return res.status(400).json({ message: "Missing query" });
+
+    const nominatimFetch = async (query: string) => {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=3&addressdetails=1`;
+      const r = await fetch(url, {
         headers: {
           "User-Agent": "PontoDigital/1.0 (sistema-rh@empresa.com.br)",
           "Accept-Language": "pt-BR,pt;q=0.9",
           "Accept": "application/json",
         },
       });
-      if (!response.ok) throw new Error("Nominatim error");
-      const data = await response.json();
+      if (!r.ok) throw new Error("Nominatim error");
+      return r.json() as Promise<any[]>;
+    };
+
+    try {
+      // 1st attempt: full query
+      let data = await nominatimFetch(q);
+
+      // 2nd attempt: strip street number — remove trailing digits after comma
+      if (!data.length) {
+        const withoutNumber = q.replace(/,\s*\d+\s*(?=,|$)/g, "");
+        if (withoutNumber !== q) data = await nominatimFetch(withoutNumber);
+      }
+
+      // 3rd attempt: just the last 2 comma-parts (usually "City - State" or "Bairro, City")
+      if (!data.length) {
+        const parts = q.split(",").map(s => s.trim()).filter(Boolean);
+        if (parts.length > 2) {
+          const simplified = parts.slice(-2).join(", ");
+          data = await nominatimFetch(simplified);
+        }
+      }
+
+      // 4th attempt: last part only (city or state)
+      if (!data.length) {
+        const parts = q.split(",").map(s => s.trim()).filter(Boolean);
+        if (parts.length > 1) {
+          data = await nominatimFetch(parts[parts.length - 1]);
+        }
+      }
+
       res.json(data);
     } catch {
       res.status(502).json({ message: "Erro ao consultar serviço de geocodificação" });

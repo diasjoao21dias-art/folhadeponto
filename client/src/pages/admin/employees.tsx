@@ -221,7 +221,7 @@ function UserDialog({
           description: display_name?.split(",").slice(0, 3).join(", ") || `Lat: ${parseFloat(lat).toFixed(5)}, Lng: ${parseFloat(lon).toFixed(5)}`,
         });
       } else {
-        toast({ title: "Endereço não encontrado", description: "Tente ser mais específico: inclua cidade e estado.", variant: "destructive" });
+        toast({ title: "Endereço não encontrado", description: "Tente digitar apenas a cidade e estado. Ex: \"Monte Carmelo, MG\"", variant: "destructive" });
       }
     } catch {
       toast({ title: "Erro ao buscar endereço", description: "Verifique sua conexão e tente novamente.", variant: "destructive" });
