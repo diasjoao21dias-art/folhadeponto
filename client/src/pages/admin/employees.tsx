@@ -15,16 +15,16 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Pencil, Trash2, Loader2, UserPlus } from "lucide-react";
+import { Search, Pencil, Trash2, Loader2, UserPlus, MapPin } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema, InsertUser, User } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
 export default function EmployeesPage() {
@@ -181,7 +181,10 @@ function UserDialog({
 }) {
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
-  
+  const { toast } = useToast();
+  const [addressSearch, setAddressSearch] = useState("");
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+
   const form = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -196,6 +199,33 @@ function UserDialog({
       ...defaultValues,
     },
   });
+
+  const handleAddressSearch = async () => {
+    if (!addressSearch.trim()) return;
+    setIsSearchingAddress(true);
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressSearch)}&format=json&limit=1&countrycodes=br`;
+      const res = await fetch(url, {
+        headers: { "Accept-Language": "pt-BR", "User-Agent": "PontoDigital/1.0" },
+      });
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        form.setValue("allowedLat", lat);
+        form.setValue("allowedLng", lon);
+        if (!form.getValues("allowedRadius")) {
+          form.setValue("allowedRadius", 200);
+        }
+        toast({ title: "Coordenadas encontradas!", description: `Lat: ${parseFloat(lat).toFixed(6)}, Lng: ${parseFloat(lon).toFixed(6)}` });
+      } else {
+        toast({ title: "Endereço não encontrado", description: "Tente um endereço mais completo.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro ao buscar endereço", description: "Verifique sua conexão e tente novamente.", variant: "destructive" });
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
 
   const onSubmit = (values: z.infer<typeof userFormSchema>) => {
     // For edit, only send password if it's not empty
@@ -309,21 +339,49 @@ function UserDialog({
               <Label>Jornada de Trabalho (Entrada-Saída, Entrada-Saída)</Label>
               <Input {...form.register("workSchedule")} placeholder="Ex: 08:00-12:00,13:00-17:00" />
             </div>
-            <div className="col-span-1 sm:col-span-2 border-t pt-4 mt-2">
-              <p className="text-sm font-semibold text-foreground mb-3">📍 Geofencing (opcional)</p>
-              <p className="text-xs text-muted-foreground mb-3">Se preenchido, o ponto só poderá ser batido dentro do raio definido a partir das coordenadas da empresa/obra.</p>
+            <div className="col-span-1 sm:col-span-2 border-t pt-4 mt-2 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-1">📍 Geofencing (opcional)</p>
+                <p className="text-xs text-muted-foreground">Se preenchido, o ponto só poderá ser batido dentro do raio definido a partir do local da empresa/obra.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Endereço do local de trabalho</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={addressSearch}
+                    onChange={(e) => setAddressSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddressSearch())}
+                    placeholder="Ex: Av. Paulista, 1000, São Paulo - SP"
+                    data-testid="input-address-search"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddressSearch}
+                    disabled={isSearchingAddress || !addressSearch.trim()}
+                    data-testid="button-search-address"
+                    className="shrink-0"
+                  >
+                    {isSearchingAddress
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : <MapPin className="h-4 w-4" />}
+                    <span className="ml-2 hidden sm:inline">Buscar coordenadas</span>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Digite o endereço e clique em buscar — as coordenadas serão preenchidas automaticamente.</p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Latitude</Label>
-                  <Input {...form.register("allowedLat")} placeholder="Ex: -23.5505" />
+                  <Input {...form.register("allowedLat")} placeholder="Ex: -23.5505" data-testid="input-allowed-lat" />
                 </div>
                 <div className="space-y-2">
                   <Label>Longitude</Label>
-                  <Input {...form.register("allowedLng")} placeholder="Ex: -46.6333" />
+                  <Input {...form.register("allowedLng")} placeholder="Ex: -46.6333" data-testid="input-allowed-lng" />
                 </div>
                 <div className="space-y-2">
                   <Label>Raio (metros)</Label>
-                  <Input type="number" {...form.register("allowedRadius", { valueAsNumber: true })} placeholder="200" />
+                  <Input type="number" {...form.register("allowedRadius", { valueAsNumber: true })} placeholder="200" data-testid="input-allowed-radius" />
                 </div>
               </div>
             </div>
